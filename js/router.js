@@ -225,7 +225,7 @@ function renderLogin() {
         <p class="eyebrow">Student portal</p>
         <h2 id="login-title">${heading}</h2>
         <p class="auth-description">${intro}</p>
-        <form class="auth-form" id="login-form">
+        <form class="auth-form" id="login-form" data-auth-mode="${loginMode}">
           ${displayNameField}${emailField}${passwordField}
           <p class="auth-error ${authFeedbackType === "success" ? "auth-success" : ""}" id="login-feedback" role="status" aria-live="polite">${escapeHTML(authFeedback)}</p>
           <button class="button auth-submit" type="submit" ${configured ? "" : "disabled"}>${submitLabel} <span aria-hidden="true">→</span></button>
