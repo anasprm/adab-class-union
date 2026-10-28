@@ -1,4 +1,5 @@
 import { coreMembers, creativeWorks, events, formatEventDate, students, wings } from "./data.js";
+import { assetPaths } from "./assets.js";
 import { isSupabaseConfigured } from "./supabase.js";
 
 const root = document.querySelector("#view-root");
@@ -65,7 +66,7 @@ function renderHome() {
       <p class="lead">Welcome to the digital home of ADAB Class Union — where we learn together, make things together, and build a community that includes everyone.</p>
       <div class="hero-actions"><a class="button" href="#events">Explore what’s on <span aria-hidden="true">→</span></a><a class="button button-secondary" href="#about">Meet the union</a></div>
     </div>
-    <div class="hero-art" aria-hidden="true"><div class="hero-orbit"><img src="assets/adab-mark.svg" alt=""></div><span class="orbit-dot orbit-dot-one">✦</span><span class="orbit-dot orbit-dot-two">⌁</span><span class="orbit-dot orbit-dot-three">◈</span></div>
+    <div class="hero-art" aria-hidden="true"><div class="hero-orbit"><img src="${assetPaths.logo}" alt=""></div><span class="orbit-dot orbit-dot-one">✦</span><span class="orbit-dot orbit-dot-two">⌁</span><span class="orbit-dot orbit-dot-three">◈</span></div>
   </section>
   <div class="stat-strip" aria-label="Union at a glance"><div class="stat-item"><span class="stat-number">24</span><span class="stat-label">Class members</span></div><div class="stat-item"><span class="stat-number">4</span><span class="stat-label">Student wings</span></div><div class="stat-item"><span class="stat-number">8</span><span class="stat-label">Union leaders</span></div></div>
   <div class="page-shell">
@@ -165,7 +166,7 @@ function renderLogin() {
     return `<div class="auth-shell">
       <section class="auth-card auth-card-account">
         <div class="auth-aside">
-          <a class="brand brand-auth" href="#home"><img src="assets/adab-mark.svg" alt="" width="42" height="42"><span><strong>ADAB</strong><small>CLASS UNION</small></span></a>
+          <a class="brand brand-auth" href="#home"><img src="${assetPaths.logo}" alt="" width="42" height="42"><span><strong>ADAB</strong><small>CLASS UNION</small></span></a>
           <div class="auth-aside-copy"><p class="eyebrow">Your union, closer</p><h1>A place for every voice.</h1><p>Stay connected to class life, student ideas, and the moments we make together.</p></div>
           <p class="auth-aside-note">DEMO SESSION · THIS PAGE ONLY</p>
         </div>
@@ -215,7 +216,7 @@ function renderLogin() {
   return `<div class="auth-shell">
     <section class="auth-card">
       <aside class="auth-aside">
-        <a class="brand brand-auth" href="#home"><img src="assets/adab-mark.svg" alt="" width="42" height="42"><span><strong>ADAB</strong><small>CLASS UNION</small></span></a>
+        <a class="brand brand-auth" href="#home"><img src="${assetPaths.logo}" alt="" width="42" height="42"><span><strong>ADAB</strong><small>CLASS UNION</small></span></a>
         <div class="auth-aside-copy"><p class="eyebrow">Your union, closer</p><h1>A place for every voice.</h1><p>Stay connected to class life, student ideas, and the moments we make together.</p></div>
         <div class="auth-decoration" aria-hidden="true"><span>✦</span><span>✳</span><span>◈</span></div>
         <p class="auth-aside-note">LEARN TOGETHER · GROW TOGETHER</p>
@@ -278,10 +279,10 @@ export function setAuthFeedback(message, type = "error") {
 
 export function setPublishedWorks(rows) {
   const presentation = {
-    Article: { kind: "article", icon: "✎", image: "assets/article-preview.svg", imageAlt: "Illustrated open notebook and a red pencil" },
-    Poetry: { kind: "poetry", icon: "❝", image: "assets/poetry-preview.svg", imageAlt: "Illustrated rainy morning with a soft crimson sunrise" },
-    Calligraphy: { kind: "calligraphy", icon: "۞", image: "assets/calligraphy-preview.svg", imageAlt: "Original abstract calligraphy-inspired floral line art" },
-    Magazine: { kind: "magazine", icon: "▤", image: "assets/magazine-preview.svg", imageAlt: "Illustrated cover of the first ADAB class magazine" }
+    Article: { kind: "article", icon: "✎", image: assetPaths.article, imageAlt: "Illustrated open notebook and a red pencil" },
+    Poetry: { kind: "poetry", icon: "❝", image: assetPaths.poetry, imageAlt: "Illustrated rainy morning with a soft crimson sunrise" },
+    Calligraphy: { kind: "calligraphy", icon: "۞", image: assetPaths.calligraphy, imageAlt: "Original abstract calligraphy-inspired floral line art" },
+    Magazine: { kind: "magazine", icon: "▤", image: assetPaths.magazine, imageAlt: "Illustrated cover of the first ADAB class magazine" }
   };
   publishedWorks = rows.map(row => ({
     id: row.id,
