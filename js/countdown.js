@@ -1,4 +1,10 @@
+let interval;
+
 export function initializeCountdown() {
+  if (interval) {
+    window.clearInterval(interval);
+    interval = undefined;
+  }
   const timer = document.querySelector("[data-countdown]");
   if (!timer) return;
   const target = new Date(timer.dataset.countdown).getTime();
@@ -8,13 +14,14 @@ export function initializeCountdown() {
     minutes: timer.querySelector("[data-minutes]"),
     seconds: timer.querySelector("[data-seconds]")
   };
-  let interval;
-
   const update = () => {
     const remaining = target - Date.now();
     if (remaining <= 0) {
       Object.values(parts).forEach(part => { part.textContent = "00"; });
-      if (interval) window.clearInterval(interval);
+      if (interval) {
+        window.clearInterval(interval);
+        interval = undefined;
+      }
       return;
     }
     const seconds = Math.floor(remaining / 1000);

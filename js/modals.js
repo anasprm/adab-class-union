@@ -1,9 +1,11 @@
 import { coreMembers, creativeWorks, events, students } from "./data.js";
+import { assetPaths } from "./assets.js";
 
 const backdrop = document.querySelector("#modal-backdrop");
 const content = document.querySelector("#modal-content");
 const closeButton = document.querySelector(".modal-close");
 let previouslyFocused;
+let publishedWorks = [];
 
 const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -38,14 +40,44 @@ function showMember(member) {
     ${member.bio ? `<p>${escapeHTML(member.bio)}</p><p>Student profile · ${escapeHTML(member.handle)}</p>` : `<p>House team: ${escapeHTML(member.house)}</p><p>Skills: ${member.skills.map(escapeHTML).join(", ")}</p>`}`);
 }
 
+export function setPublishedWorks(rows) {
+  const presentation = {
+    Article: { kind: "article", image: assetPaths.article, imageAlt: "Illustrated open notebook and a red pencil" },
+    Poetry: { kind: "poetry", image: assetPaths.poetry, imageAlt: "Illustrated rainy morning with a soft crimson sunrise" },
+    Calligraphy: { kind: "calligraphy", image: assetPaths.calligraphy, imageAlt: "Original abstract calligraphy-inspired floral line art" },
+    Magazine: { kind: "magazine", image: assetPaths.magazine, imageAlt: "Illustrated cover of the first ADAB class magazine" }
+  };
+  publishedWorks = rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    author: row.author_name,
+    type: row.work_type,
+    date: new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(row.created_at)),
+    content: row.content,
+    ...presentation[row.work_type]
+  }));
+}
+
 export function initializeModals() {
   document.addEventListener("click", event => {
     const target = event.target instanceof Element ? event.target.closest("[data-event-id], [data-work-id], [data-member-roll], [data-student-roll]") : null;
     if (!target) return;
-    if (target.dataset.eventId) showEvent(events.find(item => item.id === target.dataset.eventId));
-    if (target.dataset.workId) showWork(creativeWorks.find(item => item.id === target.dataset.workId));
-    if (target.dataset.memberRoll) showMember(coreMembers.find(item => item.roll === target.dataset.memberRoll));
-    if (target.dataset.studentRoll) showMember(students.find(item => item.roll === target.dataset.studentRoll));
+    if (target.dataset.eventId) {
+      const event = events.find(item => item.id === target.dataset.eventId);
+      if (event) showEvent(event);
+    }
+    if (target.dataset.workId) {
+      const work = [...creativeWorks, ...publishedWorks].find(item => item.id === target.dataset.workId);
+      if (work) showWork(work);
+    }
+    if (target.dataset.memberRoll) {
+      const member = coreMembers.find(item => item.roll === target.dataset.memberRoll);
+      if (member) showMember(member);
+    }
+    if (target.dataset.studentRoll) {
+      const member = students.find(item => item.roll === target.dataset.studentRoll);
+      if (member) showMember(member);
+    }
   });
 
   document.addEventListener("keydown", event => {

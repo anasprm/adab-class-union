@@ -317,9 +317,6 @@
 .auth-required p { max-width: 470px; margin: 0; color: var(--text-muted); }
 .toast-error { border-color: #fca5a5; border-left-color: #b91c1c; }
 .toast-error::before { color: #b91c1c; content: "!"; }
-.account-nav-link { color: var(--red-primary) !important; }
-.account-nav-link::after { transform: scaleX(1) !important; }
-
 @keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -330,9 +327,9 @@
 @media (max-width: 650px) {
   .page-shell { padding: 39px 20px 10px; }
   .hero { min-height: 0; grid-template-columns: 1fr; padding: 52px 22px 32px; }
-  .hero-art { min-height: 220px; }
-  .hero-orbit { width: min(58vw, 230px); }
-  .orbit-dot { width: 42px; height: 42px; }
+  .hero-art { min-height: 148px; }
+  .hero-orbit { width: min(38vw, 150px); }
+  .orbit-dot { width: 36px; height: 36px; border-radius: 12px; }
   .stat-item { min-height: 93px; }
   .stat-number { font-size: 1.4rem; }
   .stat-label { font-size: .72rem; text-align: center; }

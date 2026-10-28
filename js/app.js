@@ -8,7 +8,7 @@ import {
 } from "./router.js";
 import { initializeEventSearch, initializeMemberSearch } from "./search.js";
 import { initializeCountdown } from "./countdown.js";
-import { initializeModals } from "./modals.js";
+import { initializeModals, setPublishedWorks as setModalPublishedWorks } from "./modals.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
 const themeButton = document.querySelector(".theme-toggle");
@@ -241,7 +241,9 @@ document.addEventListener("adab:route-rendered", () => {
           showToast("Published student works could not be loaded. Please try again later.", "error");
           return;
         }
-        setPublishedWorks(data || []);
+        const rows = data || [];
+        setPublishedWorks(rows);
+        setModalPublishedWorks(rows);
         if (getActiveRoute() === "works") renderRoute("works");
       }).catch(error => {
         publishedWorksLoaded = false;

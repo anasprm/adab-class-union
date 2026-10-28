@@ -91,7 +91,7 @@ function suggestionForm() {
     return `<div class="auth-required"><p>Sign in with your student account to send a suggestion to the union council.</p><a class="button" href="#login">Sign in to continue →</a></div>`;
   }
   return `<form class="contact-form" id="suggestion-form">
-    <div class="form-field"><label for="suggestion-message">Your suggestion</label><textarea id="suggestion-message" name="message" required maxlength="2000"></textarea></div>
+    <div class="form-field"><label for="suggestion-message">Your suggestion</label><textarea id="suggestion-message" name="message" required minlength="5" maxlength="2000"></textarea></div>
     <p class="form-note">Sending as ${escapeHTML(currentUser.email)}. Your suggestion will be stored for the union council.</p>
     <div><button class="button" type="submit">Send suggestion <span aria-hidden="true">→</span></button></div>
   </form>`;
@@ -168,7 +168,7 @@ function renderLogin() {
         <div class="auth-aside">
           <a class="brand brand-auth" href="#home"><img src="${assetPaths.logo}" alt="" width="42" height="42"><span><strong>ADAB</strong><small>CLASS UNION</small></span></a>
           <div class="auth-aside-copy"><p class="eyebrow">Your union, closer</p><h1>A place for every voice.</h1><p>Stay connected to class life, student ideas, and the moments we make together.</p></div>
-          <p class="auth-aside-note">DEMO SESSION · THIS PAGE ONLY</p>
+          <p class="auth-aside-note">YOUR ADAB ACCOUNT</p>
         </div>
         <div class="auth-content">
           <div class="account-avatar" aria-hidden="true">${escapeHTML(initials)}</div>
