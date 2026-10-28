@@ -1,14 +1,32 @@
 import {
   getActiveRoute,
   renderRoute,
+  setAdminProfiles,
+  setAnnouncements,
   setAuthFeedback,
   setAuthMode,
+  setCurrentProfile,
   setCurrentUser,
-  setPublishedWorks
+  setFinanceEntries,
+  setPortalEvents,
+  setPortalMembers,
+  setPortalWings,
+  setPublishedWorks,
+  setReviewData
 } from "./router.js";
-import { initializeEventSearch, initializeMemberSearch } from "./search.js";
+import {
+  initializeEventSearch,
+  initializeMemberSearch,
+  setDirectoryStudents,
+  setPortalSearchEvents
+} from "./search.js";
 import { initializeCountdown } from "./countdown.js";
-import { initializeModals, setPublishedWorks as setModalPublishedWorks } from "./modals.js";
+import {
+  initializeModals,
+  setPortalEvents as setModalPortalEvents,
+  setPortalMembers as setModalPortalMembers,
+  setPublishedWorks as setModalPublishedWorks
+} from "./modals.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 
 const themeButton = document.querySelector(".theme-toggle");
@@ -16,6 +34,16 @@ const menuButton = document.querySelector(".menu-toggle");
 const nav = document.querySelector(".primary-nav");
 const toastRegion = document.querySelector(".toast-region");
 let publishedWorksLoaded = false;
+let portalWingsLoaded = false;
+let portalMembersLoaded = false;
+let portalEventsLoaded = false;
+let announcementsLoaded = false;
+let financeLoaded = false;
+let adminProfilesLoaded = false;
+let reviewDataLoaded = false;
+let currentProfileRequest;
+let authenticatedUserId = null;
+let currentProfile = null;
 
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -56,6 +84,169 @@ async function insertForCurrentUser(table, values) {
     user_id: data.session.user.id
   });
   return { error };
+}
+
+function showDatabaseError(action, error) {
+  console.error(`${action} failed.`, error);
+  showToast(`${action} failed. ${error.message || "Please try again."}`, "error");
+}
+
+async function loadCurrentProfile(user) {
+  if (!supabase || !user) {
+    setCurrentProfile(null);
+    return;
+  }
+  if (currentProfileRequest === user.id) return;
+  currentProfileRequest = user.id;
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  if (currentProfileRequest !== user.id) return;
+  currentProfileRequest = undefined;
+  if (error) {
+    showDatabaseError("Loading your approved account role", error);
+    currentProfile = null;
+    setCurrentProfile(null);
+    return;
+  }
+  currentProfile = data?.is_active ? data : null;
+  setCurrentProfile(currentProfile);
+}
+
+async function loadPortalWings() {
+  if (!supabase || portalWingsLoaded) return;
+  portalWingsLoaded = true;
+  const { data, error } = await supabase.from("portal_wings")
+    .select("id,name,accent,objective,activities,icon")
+    .order("name");
+  if (error) {
+    portalWingsLoaded = false;
+    showDatabaseError("Loading wing information", error);
+    return;
+  }
+  setPortalWings(data || []);
+}
+
+async function loadPortalEvents() {
+  if (!supabase || portalEventsLoaded) return;
+  portalEventsLoaded = true;
+  const { data, error } = await supabase.from("portal_events")
+    .select("id,title,category,starts_at,time_label,venue,description,status,wing_id,is_published")
+    .eq("is_published", true)
+    .order("starts_at", { ascending: true });
+  if (error) {
+    portalEventsLoaded = false;
+    showDatabaseError("Loading class events", error);
+    return;
+  }
+  const rows = data || [];
+  setPortalSearchEvents(rows);
+  setModalPortalEvents(rows);
+  setPortalEvents(rows);
+}
+
+async function loadPortalMembers() {
+  if (!supabase || !currentProfile || portalMembersLoaded) return;
+  portalMembersLoaded = true;
+  const { data, error } = await supabase.from("member_directory")
+    .select("id,display_name,roll_number,house_team,district")
+    .order("display_name");
+  if (error) {
+    portalMembersLoaded = false;
+    showDatabaseError("Loading the class directory", error);
+    return;
+  }
+  const rows = data || [];
+  setDirectoryStudents(rows);
+  setModalPortalMembers(rows);
+  setPortalMembers(rows);
+}
+
+async function loadAnnouncements() {
+  if (!supabase || announcementsLoaded) return;
+  announcementsLoaded = true;
+  const { data, error } = await supabase.from("announcements")
+    .select("id,title,message,wing_id,created_at")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(6);
+  if (error) {
+    announcementsLoaded = false;
+    showDatabaseError("Loading announcements", error);
+    return;
+  }
+  setAnnouncements(data || []);
+}
+
+async function loadFinanceEntries() {
+  if (!supabase || !currentProfile || financeLoaded) return;
+  financeLoaded = true;
+  setFinanceEntries([], true);
+  const { data, error } = await supabase.from("finance_entries")
+    .select("id,entry_type,amount,category,description,occurred_on,attachment_path,created_at")
+    .order("occurred_on", { ascending: false });
+  if (error) {
+    financeLoaded = false;
+    setFinanceEntries([], false);
+    showDatabaseError("Loading the private finance ledger", error);
+    return;
+  }
+  setFinanceEntries(data || [], false);
+}
+
+async function loadAdminProfiles() {
+  if (!supabase || currentProfile?.role !== "developer" || adminProfilesLoaded) return;
+  adminProfilesLoaded = true;
+  setAdminProfiles([], true);
+  const { data, error } = await supabase.from("profiles")
+    .select("id,email,display_name,role,wing_id,is_active,created_at")
+    .order("created_at", { ascending: true });
+  if (error) {
+    adminProfilesLoaded = false;
+    setAdminProfiles([], false);
+    showDatabaseError("Loading the account roster", error);
+    return;
+  }
+  setAdminProfiles(data || [], false);
+}
+
+async function loadReviewData() {
+  if (!supabase || !currentProfile || !["developer", "teacher", "committee"].includes(currentProfile.role) || reviewDataLoaded) return;
+  reviewDataLoaded = true;
+  const [works, suggestions] = await Promise.all([
+    supabase.from("creative_submissions")
+      .select("id,title,author_name,work_type,excerpt,content,created_at,attachment_path")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true }),
+    supabase.from("suggestions")
+      .select("id,user_id,message,created_at")
+      .order("created_at", { ascending: false })
+      .limit(50)
+  ]);
+  if (works.error || suggestions.error) {
+    reviewDataLoaded = false;
+    showDatabaseError("Loading council review items", works.error || suggestions.error);
+    return;
+  }
+  setReviewData(works.data || [], (suggestions.data || []).map(item => ({
+    ...item,
+    email: `Member ${item.user_id.slice(0, 8)}`
+  })));
+}
+
+function requestPrivateFile(path, bucket = "finance-private") {
+  const fileWindow = window.open("about:blank", "_blank");
+  if (fileWindow) fileWindow.opener = null;
+  supabase.storage.from(bucket).createSignedUrl(path, 60).then(({ data, error }) => {
+    if (error) {
+      fileWindow?.close();
+      showDatabaseError("Opening the private document", error);
+      return;
+    }
+    if (fileWindow) fileWindow.location.href = data.signedUrl;
+    else showToast("Allow pop-ups to open this private document.", "error");
+  }).catch(error => {
+    fileWindow?.close();
+    showDatabaseError("Opening the private document", error);
+  });
 }
 
 themeButton.addEventListener("click", () => {
@@ -101,6 +292,30 @@ document.addEventListener("click", event => {
   const authMode = event.target instanceof Element ? event.target.closest("button[data-auth-mode]") : null;
   if (authMode) setAuthMode(authMode.dataset.authMode);
 
+  const fileLink = event.target instanceof Element ? event.target.closest("[data-finance-file]") : null;
+  if (fileLink && currentProfile) requestPrivateFile(fileLink.dataset.financeFile);
+  const workFile = event.target instanceof Element ? event.target.closest("[data-work-file]") : null;
+  if (workFile && currentProfile) requestPrivateFile(workFile.dataset.workFile, "student-works-private");
+
+  const deleteFinance = event.target instanceof Element ? event.target.closest("[data-finance-delete]") : null;
+  if (deleteFinance && currentProfile && ["developer", "treasurer"].includes(currentProfile.role)) {
+    const id = deleteFinance.dataset.financeDelete;
+    const attachmentPath = deleteFinance.dataset.attachment;
+    supabase.from("finance_entries").delete().eq("id", id).then(async ({ error }) => {
+      if (error) {
+        showDatabaseError("Deleting the finance entry", error);
+        return;
+      }
+      if (attachmentPath) {
+        const { error: fileError } = await supabase.storage.from("finance-private").remove([attachmentPath]);
+        if (fileError) showDatabaseError("Removing the private attachment", fileError);
+      }
+      financeLoaded = false;
+      await loadFinanceEntries();
+      showToast("Finance entry deleted.");
+    }).catch(error => showDatabaseError("Deleting the finance entry", error));
+  }
+
   if (action?.dataset.action === "sign-out") {
     if (!supabase) return;
     supabase.auth.signOut().then(({ error }) => {
@@ -116,6 +331,22 @@ document.addEventListener("click", event => {
     event.preventDefault();
     location.hash = "home";
     window.setTimeout(() => document.querySelector("#suggestions")?.scrollIntoView({ behavior: "smooth" }), 0);
+  }
+});
+
+document.addEventListener("change", event => {
+  if (!(event.target instanceof HTMLSelectElement)) return;
+  if (event.target.matches("#invite-role")) {
+    const wingField = document.querySelector("#invite-wing-field");
+    if (wingField) wingField.hidden = event.target.value !== "wing";
+  }
+  const accountForm = event.target.closest(".account-access-form");
+  if (accountForm && event.target.name === "role") {
+    const wingSelect = accountForm.querySelector('select[name="wing_id"]');
+    if (wingSelect) {
+      wingSelect.disabled = event.target.value !== "wing";
+      if (event.target.value === "wing" && !wingSelect.value) wingSelect.value = wingSelect.options[1]?.value || "";
+    }
   }
 });
 
@@ -144,18 +375,6 @@ document.addEventListener("submit", event => {
           setAuthFeedback("Sign-in completed without an active session. Please try again.");
         }
       }).catch(showAuthNetworkError);
-    } else if (mode === "signup") {
-      const displayName = String(formData.get("name") || "").trim();
-      supabase.auth.signUp({ email, password, options: { data: { display_name: displayName } } }).then(({ data, error }) => {
-        if (error) {
-          setAuthFeedback(error.message);
-        } else if (data.session) {
-          location.hash = "home";
-          showToast("Your ADAB account is ready.");
-        } else {
-          setAuthFeedback("Check your email for a confirmation link to finish creating your account.", "success");
-        }
-      }).catch(showAuthNetworkError);
     } else if (mode === "recovery") {
       const redirectTo = `${location.origin}${location.pathname}#login`;
       supabase.auth.resetPasswordForEmail(email, { redirectTo }).then(({ error }) => {
@@ -173,32 +392,309 @@ document.addEventListener("submit", event => {
     }
     return;
   }
-  if (event.target.id === "creative-work-form") {
+  if (event.target.id === "profile-form") {
     event.preventDefault();
-    if (!event.target.reportValidity()) return;
-    if (!supabase) {
-      showToast("Supabase isn’t configured. Your work could not be submitted.", "error");
-      return;
-    }
+    if (!currentProfile || !event.target.reportValidity()) return;
     const formData = new FormData(event.target);
-    const type = String(formData.get("type"));
-    insertForCurrentUser("creative_submissions", {
-      title: String(formData.get("title")).trim(),
-      author_name: String(formData.get("author")).trim(),
-      work_type: type,
-      excerpt: String(formData.get("excerpt")).trim(),
-      content: String(formData.get("content")).trim()
-    }).then(({ error }) => {
+    supabase.from("profiles").update({
+      display_name: String(formData.get("display_name")).trim(),
+      roll_number: String(formData.get("roll_number")).trim() || null,
+      house_team: String(formData.get("house_team")) || null,
+      district: String(formData.get("district")).trim() || null,
+      updated_at: new Date().toISOString()
+    }).eq("id", currentProfile.id).select("*").single().then(({ data, error }) => {
       if (error) {
-        showToast(`Your work could not be submitted: ${error.message}`, "error");
+        showDatabaseError("Saving your profile", error);
+        return;
+      }
+      if (event.target.id === "change-password-form") {
+        event.preventDefault();
+        if (!currentProfile || !event.target.reportValidity()) return;
+        const formData = new FormData(event.target);
+        const password = String(formData.get("password") || "");
+        const confirmation = String(formData.get("confirm_password") || "");
+        if (password !== confirmation) {
+          showToast("The passwords do not match.", "error");
+          return;
+        }
+        supabase.auth.updateUser({ password }).then(({ error }) => {
+          if (error) {
+            showDatabaseError("Changing your password", error);
+            return;
+          }
+          event.target.reset();
+          showToast("Your password has been changed.");
+        }).catch(error => showDatabaseError("Changing your password", error));
+        return;
+      }
+      setCurrentProfile(data);
+      currentProfile = data;
+      portalMembersLoaded = false;
+      loadPortalMembers();
+      showToast("Your profile has been updated.");
+    }).catch(error => showDatabaseError("Saving your profile", error));
+    return;
+  }
+  if (event.target.id === "invite-form") {
+    event.preventDefault();
+    if (currentProfile?.role !== "developer" || !event.target.reportValidity()) return;
+    const formData = new FormData(event.target);
+    const role = String(formData.get("role"));
+    supabase.functions.invoke("invite-user", {
+      body: {
+        action: "invite",
+        email: String(formData.get("email")).trim().toLowerCase(),
+        display_name: String(formData.get("display_name")).trim(),
+        role,
+        wing_id: role === "wing" ? String(formData.get("wing_id")) : null
+      }
+    }).then(({ data, error }) => {
+      if (error) {
+        showDatabaseError("Sending the account invitation", error);
         return;
       }
       event.target.reset();
+      document.querySelector("#invite-wing-field").hidden = true;
+      adminProfilesLoaded = false;
+      loadAdminProfiles();
+      showToast(data?.message || "Account invitation sent.");
+    }).catch(error => showDatabaseError("Sending the account invitation", error));
+    return;
+  }
+  if (event.target.matches(".account-access-form")) {
+    event.preventDefault();
+    if (currentProfile?.role !== "developer") return;
+    const form = event.target;
+    const formData = new FormData(form);
+    const role = String(formData.get("role"));
+    supabase.functions.invoke("invite-user", {
+      body: {
+        action: "update-user",
+        user_id: form.dataset.accountUpdate,
+        role,
+        wing_id: role === "wing" ? String(formData.get("wing_id")) : null,
+        is_active: formData.get("is_active") === "on"
+      }
+    }).then(({ data, error }) => {
+      if (error) {
+        showDatabaseError("Updating account access", error);
+        return;
+      }
+      adminProfilesLoaded = false;
+      loadAdminProfiles();
+      showToast(data?.message || "Account access updated.");
+    }).catch(error => showDatabaseError("Updating account access", error));
+    return;
+  }
+  if (event.target.matches(".wing-editor")) {
+    event.preventDefault();
+    if (currentProfile?.role !== "developer" || !event.target.reportValidity()) return;
+    const form = event.target;
+    const formData = new FormData(form);
+    const activities = String(formData.get("activities") || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    supabase.from("portal_wings").update({
+      name: String(formData.get("name")).trim(),
+      accent: String(formData.get("accent")).trim(),
+      icon: String(formData.get("icon")).trim(),
+      objective: String(formData.get("objective")).trim(),
+      activities,
+      updated_at: new Date().toISOString()
+    }).eq("id", form.dataset.wingUpdate).select("id,name,accent,objective,activities,icon").single().then(({ error }) => {
+      if (error) {
+        showDatabaseError("Saving wing information", error);
+        return;
+      }
+      portalWingsLoaded = false;
+      adminProfilesLoaded = false;
+      loadPortalWings();
+      loadAdminProfiles();
+      showToast("Wing name and content updated across the portal.");
+    }).catch(error => showDatabaseError("Saving wing information", error));
+    return;
+  }
+  if (event.target.id === "announcement-form") {
+    event.preventDefault();
+    if (!currentProfile || !event.target.reportValidity()) return;
+    const formData = new FormData(event.target);
+    supabase.from("announcements").insert({
+      title: String(formData.get("title")).trim(),
+      message: String(formData.get("message")).trim(),
+      wing_id: String(formData.get("wing_id")) || null,
+      created_by: currentProfile.id
+    }).select("id,title,message,wing_id,created_at").single().then(({ data, error }) => {
+      if (error) {
+        showDatabaseError("Publishing the announcement", error);
+        return;
+      }
+      announcementsLoaded = false;
+      event.target.reset();
+      loadAnnouncements();
+      showToast("Announcement published.");
+    }).catch(error => showDatabaseError("Publishing the announcement", error));
+    return;
+  }
+  if (event.target.id === "portal-event-form") {
+    event.preventDefault();
+    if (!currentProfile || !event.target.reportValidity()) return;
+    const formData = new FormData(event.target);
+    const startsAt = new Date(String(formData.get("starts_at")));
+    supabase.from("portal_events").insert({
+      title: String(formData.get("title")).trim(),
+      category: String(formData.get("category")).trim(),
+      starts_at: startsAt.toISOString(),
+      time_label: String(formData.get("time_label")).trim(),
+      venue: String(formData.get("venue")).trim(),
+      description: String(formData.get("description")).trim(),
+      status: startsAt.getTime() > Date.now() ? "Upcoming" : "Completed",
+      wing_id: String(formData.get("wing_id")) || null,
+      created_by: currentProfile.id
+    }).select("id,title,category,starts_at,time_label,venue,description,status,wing_id,is_published").single().then(({ error }) => {
+      if (error) {
+        showDatabaseError("Publishing the event", error);
+        return;
+      }
+      portalEventsLoaded = false;
+      event.target.reset();
+      loadPortalEvents();
+      showToast("Event published.");
+    }).catch(error => showDatabaseError("Publishing the event", error));
+    return;
+  }
+  if (event.target.matches(".review-work-form")) {
+    event.preventDefault();
+    if (!currentProfile || !["developer", "teacher", "committee"].includes(currentProfile.role)) return;
+    const status = String(new FormData(event.target).get("status"));
+    supabase.from("creative_submissions").update({ status })
+      .eq("id", event.target.dataset.workReview).select("id").single().then(({ error }) => {
+        if (error) {
+          showDatabaseError("Saving the student work decision", error);
+          return;
+        }
+        reviewDataLoaded = false;
+        loadReviewData();
+        showToast(status === "published" ? "Student work published." : "Student work declined.");
+      }).catch(error => showDatabaseError("Saving the student work decision", error));
+    return;
+  }
+  if (event.target.id === "finance-form") {
+    event.preventDefault();
+    if (!currentProfile || !["developer", "treasurer"].includes(currentProfile.role) || !event.target.reportValidity()) return;
+    const form = event.target;
+    const formData = new FormData(form);
+    const file = formData.get("attachment");
+    let attachmentPath = null;
+    const saveEntry = async () => {
+      if (file instanceof File && file.size > 0) {
+        const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+          showToast("Choose a PDF or image no larger than 10 MB.", "error");
+          return;
+        }
+        const safeName = file.name.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100);
+        attachmentPath = `${currentProfile.id}/${crypto.randomUUID()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("finance-private")
+          .upload(attachmentPath, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          showDatabaseError("Uploading the private finance attachment", uploadError);
+          return;
+        }
+      }
+      const { error } = await supabase.from("finance_entries").insert({
+        entry_type: String(formData.get("entry_type")),
+        amount: Number(formData.get("amount")),
+        category: String(formData.get("category")).trim(),
+        description: String(formData.get("description")).trim(),
+        occurred_on: String(formData.get("occurred_on")),
+        attachment_path: attachmentPath,
+        created_by: currentProfile.id
+      });
+      if (error) {
+        if (attachmentPath) {
+          const { error: cleanupError } = await supabase.storage.from("finance-private").remove([attachmentPath]);
+          if (cleanupError) console.error("Could not remove an unattached finance file.", cleanupError);
+        }
+        showDatabaseError("Saving the finance entry", error);
+        return;
+      }
+      form.reset();
+      financeLoaded = false;
+      await loadFinanceEntries();
+      showToast("Finance entry added.");
+    };
+    saveEntry().catch(error => showDatabaseError("Saving the finance entry", error));
+    return;
+  }
+  if (event.target.matches(".finance-update-form")) {
+    event.preventDefault();
+    if (!currentProfile || !["developer", "treasurer"].includes(currentProfile.role) || !event.target.reportValidity()) return;
+    const formData = new FormData(event.target);
+    supabase.from("finance_entries").update({
+      entry_type: String(formData.get("entry_type")),
+      amount: Number(formData.get("amount")),
+      category: String(formData.get("category")).trim(),
+      description: String(formData.get("description")).trim(),
+      occurred_on: String(formData.get("occurred_on")),
+      updated_by: currentProfile.id,
+      updated_at: new Date().toISOString()
+    }).eq("id", event.target.dataset.financeUpdate).then(async ({ error }) => {
+      if (error) {
+        showDatabaseError("Updating the finance entry", error);
+        return;
+      }
+      financeLoaded = false;
+      await loadFinanceEntries();
+      showToast("Finance entry updated.");
+    }).catch(error => showDatabaseError("Updating the finance entry", error));
+    return;
+  }
+  if (event.target.id === "creative-work-form") {
+    event.preventDefault();
+    if (!event.target.reportValidity()) return;
+    if (!supabase || !currentProfile) {
+      showToast("Supabase isn’t configured. Your work could not be submitted.", "error");
+      return;
+    }
+    const form = event.target;
+    const formData = new FormData(form);
+    const type = String(formData.get("type"));
+    const file = formData.get("attachment");
+    const submitWork = async () => {
+      let attachmentPath = null;
+      if (file instanceof File && file.size > 0) {
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+          showToast("Choose a JPEG, PNG, or WebP image no larger than 10 MB.", "error");
+          return;
+        }
+        const safeName = file.name.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100);
+        attachmentPath = `${currentProfile.id}/${crypto.randomUUID()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("student-works-private")
+          .upload(attachmentPath, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          showDatabaseError("Uploading your private artwork", uploadError);
+          return;
+        }
+      }
+      const { error } = await insertForCurrentUser("creative_submissions", {
+        title: String(formData.get("title")).trim(),
+        author_name: String(formData.get("author")).trim(),
+        work_type: type,
+        excerpt: String(formData.get("excerpt")).trim(),
+        content: String(formData.get("content")).trim(),
+        attachment_path: attachmentPath
+      });
+      if (error) {
+        if (attachmentPath) {
+          const { error: cleanupError } = await supabase.storage.from("student-works-private").remove([attachmentPath]);
+          if (cleanupError) console.error("Could not remove an unattached student artwork.", cleanupError);
+        }
+        showDatabaseError("Submitting your creative work", error);
+        return;
+      }
+      form.reset();
       showToast("Your work has been submitted privately for union council review.");
-    }).catch(error => {
-      console.error("Could not submit student creative work.", error);
-      showToast("A network error prevented your work from being submitted. Please retry.", "error");
-    });
+    };
+    submitWork().catch(error => showDatabaseError("Submitting your creative work", error));
     return;
   }
   if (event.target.id !== "suggestion-form") return;
@@ -228,20 +724,38 @@ document.addEventListener("adab:route-rendered", () => {
   initializeMemberSearch();
   initializeEventSearch();
   initializeCountdown();
+  loadPortalWings();
+  const route = getActiveRoute();
+  if (route === "home" || route === "events") loadPortalEvents();
+  if (route === "members") loadPortalMembers();
+  if (route === "home") loadAnnouncements();
+  if (route === "finance") loadFinanceEntries();
+  if (route === "admin") loadAdminProfiles();
+  if (route === "account") loadReviewData();
   if (getActiveRoute() === "works" && supabase && !publishedWorksLoaded) {
     publishedWorksLoaded = true;
     supabase.from("creative_submissions")
-      .select("id,title,author_name,work_type,excerpt,content,created_at")
+      .select("id,title,author_name,work_type,excerpt,content,created_at,attachment_path")
       .eq("status", "published")
       .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error) {
           publishedWorksLoaded = false;
           console.error("Could not load published student works.", error);
           showToast("Published student works could not be loaded. Please try again later.", "error");
           return;
         }
-        const rows = data || [];
+        const rows = await Promise.all((data || []).map(async row => {
+          if (!row.attachment_path) return row;
+          const { data: file, error: fileError } = await supabase.storage
+            .from("student-works-private").createSignedUrl(row.attachment_path, 3600);
+          if (fileError) {
+            console.error("Could not create an image link for published student work.", fileError);
+            showToast("A published artwork preview could not be loaded.", "error");
+            return row;
+          }
+          return { ...row, image_url: file.signedUrl };
+        }));
         setPublishedWorks(rows);
         setModalPublishedWorks(rows);
         if (getActiveRoute() === "works") renderRoute("works");
@@ -265,8 +779,34 @@ document.querySelector("#current-year").textContent = String(new Date().getFullY
 initializeModals();
 if (supabase) {
   supabase.auth.onAuthStateChange((event, session) => {
-    setCurrentUser(session?.user || null);
-    if (event === "PASSWORD_RECOVERY") setAuthMode("update-password");
+    const user = session?.user || null;
+    if (authenticatedUserId !== (user?.id || null)) {
+      authenticatedUserId = user?.id || null;
+      currentProfile = null;
+      currentProfileRequest = undefined;
+      portalMembersLoaded = false;
+      financeLoaded = false;
+      adminProfilesLoaded = false;
+      reviewDataLoaded = false;
+      setFinanceEntries([], false);
+      setAdminProfiles([], false);
+      setReviewData([], []);
+    }
+    setCurrentUser(user);
+    if (!user) {
+      currentProfileRequest = undefined;
+      currentProfile = null;
+      setPortalMembers(null);
+      setModalPortalMembers(null);
+      setDirectoryStudents(null);
+      setCurrentProfile(null);
+    } else if (["INITIAL_SESSION", "SIGNED_IN", "USER_UPDATED"].includes(event)) {
+      loadCurrentProfile(user);
+    }
+    if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && location.hash.includes("type=invite"))) {
+      setAuthMode("update-password");
+      if (location.hash.includes("type=invite")) location.hash = "login";
+    }
   });
 }
 window.addEventListener("hashchange", () => renderRoute(getActiveRoute()));

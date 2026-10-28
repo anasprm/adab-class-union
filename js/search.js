@@ -1,5 +1,35 @@
 import { events, students } from "./data.js";
 
+let directoryStudents = students;
+let portalEvents = [];
+
+export function setDirectoryStudents(rows) {
+  if (!rows) {
+    directoryStudents = students;
+    return;
+  }
+  directoryStudents = rows.map(row => {
+    const name = row.display_name || "ADAB student";
+    return {
+      id: row.id,
+      name,
+      initials: name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
+      roll: row.roll_number || row.id,
+      house: row.house_team || "Student",
+      district: row.district || "District not added"
+    };
+  });
+}
+
+export function setPortalSearchEvents(rows) {
+  portalEvents = rows.map(event => ({
+    ...event,
+    date: event.starts_at,
+    status: new Date(event.starts_at).getTime() > Date.now() ? "Upcoming" : "Completed",
+    time: event.time_label
+  }));
+}
+
 export function initializeMemberSearch() {
   const grid = document.querySelector("#member-grid");
   if (!grid) return;
@@ -16,12 +46,12 @@ export function initializeMemberSearch() {
 
   function update() {
     const query = search.value.trim().toLocaleLowerCase();
-    const filtered = students.filter(student =>
+    const filtered = directoryStudents.filter(student =>
       (!query || `${student.name} ${student.roll}`.toLocaleLowerCase().includes(query)) &&
       (!house.value || student.house === house.value) &&
       (!district.value || student.district === district.value)
     );
-    count.textContent = `Showing ${filtered.length} of ${students.length} students`;
+    count.textContent = `Showing ${filtered.length} of ${directoryStudents.length} students`;
     clear.hidden = !search.value;
     grid.innerHTML = filtered.length ? filtered.map(student => `<article class="card profile-card" data-student-roll="${escapeHTML(student.roll)}" tabindex="0" role="button" aria-label="View ${escapeHTML(student.name)} profile">
       <div class="card-body"><div class="profile-avatar" aria-hidden="true">${escapeHTML(student.initials)}</div><div><span class="badge">${escapeHTML(student.house)}</span><h3>${escapeHTML(student.name)}</h3><p>${escapeHTML(student.roll)} · ${escapeHTML(student.district)}</p></div></div>
@@ -50,12 +80,13 @@ export function initializeEventSearch() {
 
   function update() {
     const query = search.value.trim().toLocaleLowerCase();
-    const filtered = events.filter(item =>
+    const allEvents = [...portalEvents, ...events];
+    const filtered = allEvents.filter(item =>
       (!query || `${item.title} ${item.category} ${item.venue}`.toLocaleLowerCase().includes(query)) &&
       (!status.value || item.status === status.value) &&
       (!category.value || item.category === category.value)
     ).sort((a, b) => new Date(b.date) - new Date(a.date));
-    count.textContent = `Showing ${filtered.length} of ${events.length} events`;
+    count.textContent = `Showing ${filtered.length} of ${allEvents.length} events`;
     clear.hidden = !search.value;
     grid.innerHTML = filtered.length ? filtered.map(item => {
       const date = new Date(item.date);

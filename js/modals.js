@@ -6,6 +6,8 @@ const content = document.querySelector("#modal-content");
 const closeButton = document.querySelector(".modal-close");
 let previouslyFocused;
 let publishedWorks = [];
+let portalEvents = [];
+let portalMembers = [];
 
 const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -54,8 +56,40 @@ export function setPublishedWorks(rows) {
     type: row.work_type,
     date: new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(row.created_at)),
     content: row.content,
-    ...presentation[row.work_type]
+    ...presentation[row.work_type],
+    image: row.image_url || presentation[row.work_type].image,
+    imageAlt: row.image_url ? `Artwork submitted with ${row.title}` : presentation[row.work_type].imageAlt
   }));
+}
+
+export function setPortalEvents(rows) {
+  portalEvents = rows.map(event => ({
+    ...event,
+    date: event.starts_at,
+    status: new Date(event.starts_at).getTime() > Date.now() ? "Upcoming" : "Completed",
+    time: event.time_label,
+    image: assetPaths.event,
+    imageAlt: "Illustrated ADAB event artwork"
+  }));
+}
+
+export function setPortalMembers(rows) {
+  if (!rows) {
+    portalMembers = [];
+    return;
+  }
+  portalMembers = rows.map(row => {
+    const name = row.display_name || "ADAB student";
+    return {
+      id: row.id,
+      name,
+      initials: name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
+      roll: row.roll_number || row.id,
+      house: row.house_team || "Student",
+      district: row.district || "District not added",
+      skills: []
+    };
+  });
 }
 
 export function initializeModals() {
@@ -63,7 +97,7 @@ export function initializeModals() {
     const target = event.target instanceof Element ? event.target.closest("[data-event-id], [data-work-id], [data-member-roll], [data-student-roll]") : null;
     if (!target) return;
     if (target.dataset.eventId) {
-      const event = events.find(item => item.id === target.dataset.eventId);
+      const event = [...events, ...portalEvents].find(item => item.id === target.dataset.eventId);
       if (event) showEvent(event);
     }
     if (target.dataset.workId) {
@@ -75,7 +109,7 @@ export function initializeModals() {
       if (member) showMember(member);
     }
     if (target.dataset.studentRoll) {
-      const member = students.find(item => item.roll === target.dataset.studentRoll);
+      const member = [...portalMembers, ...students].find(item => item.roll === target.dataset.studentRoll);
       if (member) showMember(member);
     }
   });

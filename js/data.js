@@ -12,10 +12,10 @@ export const coreMembers = [
 ];
 
 export const wings = [
-  { name: "Academic & Dars Wing", icon: "✦", accent: "Learning", objective: "Build strong study habits and make peer learning a shared part of class life.", activities: ["Peer-led revision circles", "Reading and study challenges", "Learning-resource exchange"] },
-  { name: "Cultural & Literary Wing", icon: "✍", accent: "Expression", objective: "Celebrate language, culture, and thoughtful expression through creative programmes.", activities: ["Poetry and short-story sessions", "Stage and speaking events", "Literary wall and class magazine"] },
-  { name: "Sports & Athletics Club", icon: "⚑", accent: "Teamwork", objective: "Make sport welcoming and energising, with opportunities for every level of experience.", activities: ["Inter-house matches", "Fitness and athletics days", "Friendly team challenges"] },
-  { name: "Media & IT Wing", icon: "◉", accent: "Communication", objective: "Document class life and share union information with care and creativity.", activities: ["Event photography and reports", "Digital design workshops", "Union announcements and archive"] }
+  { id: "academic-dars", name: "Academic & Dars Wing", icon: "✦", accent: "Learning", objective: "Build strong study habits and make peer learning a shared part of class life.", activities: ["Peer-led revision circles", "Reading and study challenges", "Learning-resource exchange"] },
+  { id: "cultural-literary", name: "Cultural & Literary Wing", icon: "✍", accent: "Expression", objective: "Celebrate language, culture, and thoughtful expression through creative programmes.", activities: ["Poetry and short-story sessions", "Stage and speaking events", "Literary wall and class magazine"] },
+  { id: "sports-athletics", name: "Sports & Athletics Club", icon: "⚑", accent: "Teamwork", objective: "Make sport welcoming and energising, with opportunities for every level of experience.", activities: ["Inter-house matches", "Fitness and athletics days", "Friendly team challenges"] },
+  { id: "media-it", name: "Media & IT Wing", icon: "◉", accent: "Communication", objective: "Document class life and share union information with care and creativity.", activities: ["Event photography and reports", "Digital design workshops", "Union announcements and archive"] }
 ];
 
 const districts = ["Malappuram", "Kozhikode", "Wayanad", "Kannur", "Palakkad", "Kasaragod", "Thrissur"];

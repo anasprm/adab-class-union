@@ -14,7 +14,9 @@ The site can build without Supabase credentials, but account and submission feat
 ## Connect Supabase
 
 1. Create a Supabase project in the account that will own the student data.
-2. In the Supabase SQL Editor, run [`supabase/migrations/20261028000100_portal_submissions.sql`](./supabase/migrations/20261028000100_portal_submissions.sql).
+2. In the Supabase SQL Editor, run the migrations in order:
+   - [`supabase/migrations/20261028000100_portal_submissions.sql`](./supabase/migrations/20261028000100_portal_submissions.sql)
+   - [`supabase/migrations/20261028000200_portal_roles_finance.sql`](./supabase/migrations/20261028000200_portal_roles_finance.sql)
 3. In **Project Settings → API**, copy the project URL and publishable key into `.env.local`:
 
    ```dotenv
@@ -23,13 +25,44 @@ The site can build without Supabase credentials, but account and submission feat
    ```
 
 4. Configure the project's Auth URL settings to include `https://adab-class-union.vercel.app/**`, `http://localhost:5173/**`, and `http://127.0.0.1:5173/**`. Password-reset emails return to the portal's `#login` route.
-5. Enable email confirmation in Auth if desired. The app handles the confirmation-email flow.
+5. Invitation and password-reset links return to the portal's `#login` route. Account registration is restricted to developer-sent invitations.
 
-The migration enables Row Level Security on both submission tables. Students can only submit rows tied to their own authenticated user ID and can only read their own private suggestions/submissions. Public visitors can read only creative works the council has explicitly published. Never put a Supabase `service_role` or secret key in this frontend, a `VITE_` variable, or Git.
+The role migration enables Row Level Security for profiles, events, announcements, and the finance ledger. Database-enforced account limits are one teacher, one core committee account, one treasurer, 15 students, seven wing accounts, and one developer; only active portal members can read financial entries or attachments. Visitors and signed-in accounts without an assigned role cannot access finance. Only a treasurer or developer can create, edit, or remove finance entries. Creative work and suggestions can be submitted only by approved accounts; the teacher, core committee, and developer can review them. Public visitors can read only creative works and announcements that have been published. Never put a Supabase `service_role` or secret key in this frontend, a `VITE_` variable, or Git.
+
+### Bootstrap the developer and enable invitations
+
+The portal is invite-only. Create the first developer user in **Supabase → Authentication → Users** and send that person an invitation. After confirming the exact account email, run this once in the SQL Editor, replacing the example address with that account's email:
+
+```sql
+insert into public.profiles (id, email, display_name, role)
+select
+  id,
+  lower(email),
+  left(coalesce(nullif(raw_user_meta_data ->> 'display_name', ''), split_part(email, '@', 1)), 80),
+  'developer'
+from auth.users
+where lower(email) = lower('developer@example.com')
+on conflict (id) do update
+set role = 'developer', is_active = true, updated_at = now();
+```
+
+Deploy the account invitation function from a machine authenticated with the Supabase CLI:
+
+```powershell
+supabase link --project-ref jqgcjrlhjoyjxmtzzxxg
+supabase secrets set PORTAL_SITE_URL=https://adab-class-union.vercel.app
+supabase functions deploy invite-user
+```
+
+Supabase supplies the function's `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` server-side. Do not copy the service-role key into Vercel or the frontend. Add the production site and local development URLs to Supabase Auth's allowed redirect URLs so invitation and password-reset links return to the portal.
+
+The developer signs in and opens **Manage portal** to invite individual accounts and assign roles. The invitation screen allows one teacher, one core committee account, one treasurer, 15 students, and 7 wing accounts. Wing accounts can be assigned to any of the four current wings. Developer access is bootstrapped separately and cannot be granted from the invitation screen. Suspend an account from the roster to revoke its portal access.
+
+The developer can edit wing names, descriptions, labels, icons, and activities in **Manage portal**. Those values are stored in Supabase and used across the Wings page, announcements, and wing-account assignments.
 
 ### Review student work
 
-New creative work is private with `status = 'pending'`. A council member can review submissions in the Supabase table editor. To publish an approved item, update its status to `published`; published pieces then appear in the public Works page. Suggestions are private to the submitting student and the council's authenticated Supabase dashboard users.
+New creative work is private with `status = 'pending'`. The teacher, core committee, and developer can review submissions from the member account page and publish or decline them. Suggestions remain private to the submitting student and approved union reviewers.
 
 ## Deploy to Vercel
 

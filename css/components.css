@@ -233,6 +233,52 @@
 .toast.is-leaving { opacity: 0; transform: translateY(8px); transition: opacity 180ms ease, transform 180ms ease; }
 .section-block[id] { scroll-margin-top: 92px; }
 
+[hidden] { display: none !important; }
+.account-overview, .finance-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.account-overview h2 { margin: 11px 0 4px; font-size: 1.25rem; }
+.account-overview p { margin: 0; color: var(--text-muted); }
+.finance-summary article { display: grid; gap: 6px; padding: 15px; border-radius: 10px; background: var(--bg-main); }
+.finance-summary span { color: var(--text-muted); font-size: .82rem; }
+.finance-summary strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.management-list, .wing-editor-grid { display: grid; gap: 14px; }
+.management-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 18px; }
+.management-card h3 { margin: 0 0 5px; font-size: 1rem; }
+.management-card p { margin: 4px 0; color: var(--text-muted); }
+.management-card small { color: var(--text-muted); }
+.management-card > div { min-width: 0; }
+.management-card form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.management-card input, .management-card select, .wing-editor input, .wing-editor textarea {
+  min-height: 42px;
+  min-width: 110px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+.management-card input[type="number"] { width: 120px; }
+.management-card input[name="description"] { width: min(250px, 100%); }
+.management-card .button { min-height: 40px; padding-inline: 13px; font-size: .8rem; }
+.checkbox-field { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: .83rem; }
+.checkbox-field input { min-width: auto; min-height: auto; }
+.button-danger { border-color: #b91c1c; background: #b91c1c; }
+.button-danger:hover { background: #7f1d1d; }
+.wing-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 23px; }
+.wing-editor .card-body { display: grid; gap: 14px; }
+.wing-editor .form-field textarea { min-height: 86px; }
+.finance-entry > div:first-child > strong { color: var(--red-primary); font-size: 1.1rem; }
+.file-link { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.file-link:hover { text-decoration: underline; }
+
 .auth-shell {
   display: grid;
   min-height: min(760px, calc(100vh - 76px));
@@ -352,6 +398,11 @@
   .auth-aside-note { margin-top: 18px; font-size: .6rem; }
   .auth-content { padding: 31px 24px 29px; }
   .event-filter-bar select { flex: 1 1 100%; }
+  .wing-editor-grid { grid-template-columns: 1fr; }
+  .management-card { grid-template-columns: 1fr; gap: 14px; }
+  .management-card form { align-items: stretch; }
+  .management-card input, .management-card select { flex: 1 1 100%; width: 100%; }
+  .management-card input[name="description"] { width: 100%; }
 }
 
 @media (max-width: 360px) {
