@@ -134,15 +134,25 @@ document.addEventListener("submit", event => {
     const password = String(formData.get("password") || "");
 
     if (mode === "signin") {
-      supabase.auth.signInWithPassword({ email, password }).then(({ error }) => {
-        if (error) setAuthFeedback(error.message);
+      supabase.auth.signInWithPassword({ email, password }).then(({ data, error }) => {
+        if (error) {
+          setAuthFeedback(error.message);
+        } else if (data.session) {
+          location.hash = "home";
+          showToast("You’re signed in.");
+        } else {
+          setAuthFeedback("Sign-in completed without an active session. Please try again.");
+        }
       }).catch(showAuthNetworkError);
     } else if (mode === "signup") {
       const displayName = String(formData.get("name") || "").trim();
       supabase.auth.signUp({ email, password, options: { data: { display_name: displayName } } }).then(({ data, error }) => {
         if (error) {
           setAuthFeedback(error.message);
-        } else if (!data.session) {
+        } else if (data.session) {
+          location.hash = "home";
+          showToast("Your ADAB account is ready.");
+        } else {
           setAuthFeedback("Check your email for a confirmation link to finish creating your account.", "success");
         }
       }).catch(showAuthNetworkError);
