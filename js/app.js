@@ -98,7 +98,7 @@ document.addEventListener("click", event => {
     action.setAttribute("aria-label", `${isVisible ? "Show" : "Hide"} password`);
     action.setAttribute("aria-pressed", String(!isVisible));
   }
-  const authMode = event.target instanceof Element ? event.target.closest("[data-auth-mode]") : null;
+  const authMode = event.target instanceof Element ? event.target.closest("button[data-auth-mode]") : null;
   if (authMode) setAuthMode(authMode.dataset.authMode);
 
   if (action?.dataset.action === "sign-out") {
