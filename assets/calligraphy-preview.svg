@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="675" viewBox="0 0 900 675" role="img" aria-labelledby="title description">
+  <title id="title">Letters in bloom</title>
+  <desc id="description">Original flowing calligraphy-inspired line art surrounded by small floral shapes.</desc>
+  <rect width="900" height="675" rx="26" fill="#f7e9e8"/>
+  <rect x="34" y="34" width="832" height="607" rx="20" fill="none" stroke="#a94b58" stroke-opacity=".32" stroke-width="3"/>
+  <g fill="none" stroke="#6f1d2b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M160 430c105-245 188 130 285-140 55-154 94 99 155-7 32-56 60-10 91 15" stroke-width="18"/>
+    <path d="M188 468c116-61 170-1 246-55 54-39 79-107 138-79 54 25 78 82 156 51" stroke-width="9"/>
+    <path d="M350 280c-54-80-139-20-106 37 26 44 95 18 105-37ZM640 202c-32-59-94-35-84 10 8 38 62 37 84-10ZM735 430c37-49 90-7 62 30-24 31-62 4-62-30Z" stroke-width="7"/>
+  </g>
+  <g fill="#dc2626"><circle cx="242" cy="317" r="10"/><circle cx="558" cy="211" r="8"/><circle cx="781" cy="452" r="9"/><circle cx="692" cy="312" r="7"/></g>
+  <text x="74" y="104" fill="#6f1d2b" font-family="Georgia,serif" font-size="27" letter-spacing="3">LETTERS IN BLOOM</text>
+</svg>

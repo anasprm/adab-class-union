@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="675" viewBox="0 0 900 675" role="img" aria-labelledby="title description">
+  <title id="title">The ADAB Journal, Issue 01</title>
+  <desc id="description">A colorful illustrated cover for the first ADAB class magazine.</desc>
+  <rect width="900" height="675" rx="26" fill="#e7e4f0"/>
+  <rect x="247" y="58" width="406" height="560" rx="12" fill="#fbfafc" stroke="#aaa1c8" stroke-width="5"/>
+  <rect x="247" y="58" width="406" height="180" rx="12" fill="#5a4a7b"/>
+  <path d="M247 222q102-86 203 0t203 0v42H247Z" fill="#dc2626"/>
+  <text x="282" y="115" fill="#e9ddff" font-family="Arial,sans-serif" font-size="20" font-weight="700" letter-spacing="5">ADAB CLASS UNION</text>
+  <text x="280" y="184" fill="#fff" font-family="Georgia,serif" font-size="49" font-weight="700">THE JOURNAL</text>
+  <circle cx="450" cy="395" r="100" fill="#fef2f2"/>
+  <path d="M450 305 539 395 450 485 361 395Z" fill="#dc2626"/>
+  <path d="m421 416 29-65 29 65h-19l-10-27-11 27h-18Z" fill="#fff"/>
+  <text x="315" y="544" fill="#4b5563" font-family="Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="3">ISSUE 01 · 2026</text>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title description">
+  <title id="title">ADAB Union Fest</title>
+  <desc id="description">A bold crimson event poster with layered geometric patterns and a community gathering motif.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#991b1b"/><stop offset="1" stop-color="#dc2626"/></linearGradient>
+    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M28 0 56 28 28 56 0 28Z" fill="none" stroke="#fff" stroke-opacity=".13" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="1200" height="675" fill="url(#background)"/>
+  <rect width="1200" height="675" fill="url(#grid)"/>
+  <circle cx="850" cy="340" r="220" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="3"/>
+  <circle cx="850" cy="340" r="170" fill="none" stroke="#fff" stroke-opacity=".26" stroke-width="2"/>
+  <path d="M850 160 1030 340 850 520 670 340Z" fill="#fff" fill-opacity=".09" stroke="#fff" stroke-opacity=".5" stroke-width="3"/>
+  <path d="m782 386 68-146 68 146h-42l-26-61-27 61h-41Z" fill="#fff"/>
+  <text x="88" y="130" fill="#fecaca" font-family="Arial,sans-serif" font-size="24" font-weight="700" letter-spacing="9">ADAB CLASS UNION PRESENTS</text>
+  <text x="84" y="228" fill="#fff" font-family="Arial,sans-serif" font-size="66" font-weight="800" letter-spacing="-2">UNION FEST</text>
+  <text x="88" y="280" fill="#fee2e2" font-family="Arial,sans-serif" font-size="25">A day to learn, create, and celebrate together.</text>
+  <text x="88" y="552" fill="#fff" font-family="Arial,sans-serif" font-size="21" font-weight="700" letter-spacing="3">KERALA · STUDENT-LED · EVERYONE WELCOME</text>
+</svg>

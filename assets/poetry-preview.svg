@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="675" viewBox="0 0 900 675" role="img" aria-labelledby="title description">
+  <title id="title">After the morning rain</title>
+  <desc id="description">A peaceful landscape with rain drops, hills, and a soft crimson sunrise.</desc>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#f8e9e9"/><stop offset="1" stop-color="#fff7ed"/></linearGradient></defs>
+  <rect width="900" height="675" rx="26" fill="url(#sky)"/>
+  <circle cx="685" cy="210" r="92" fill="#dc2626" opacity=".8"/>
+  <path d="M0 432q180-132 340 0t340 0 220-36v279H0Z" fill="#b9c9b5"/>
+  <path d="M0 515q180-120 354 0t347-5 199-44v209H0Z" fill="#78917f"/>
+  <g fill="#fff" opacity=".75"><path d="M174 176c-26 30-43 55-43 76a43 43 0 0 0 86 0c0-21-17-46-43-76Z"/><path d="M360 232c-18 20-30 37-30 52a30 30 0 0 0 60 0c0-15-12-32-30-52Z"/></g>
+  <path d="M122 560q180-94 348 0" fill="none" stroke="#fef2f2" stroke-width="8" stroke-linecap="round" opacity=".65"/>
+  <text x="84" y="106" fill="#713f12" font-family="Georgia,serif" font-size="31" font-style="italic">“The leaves keep little drops of light.”</text>
+</svg>
