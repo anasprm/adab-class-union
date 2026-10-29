@@ -6,3 +6,6 @@ dist/
 npm-debug.log*
 .vercel
 /supabase/.temp/
+.artifacts/
+_old_qaaf_backup/
+

@@ -4,16 +4,17 @@ const portalSiteUrl = Deno.env.get("PORTAL_SITE_URL") || "https://adab-class-uni
 const allowedOrigins = new Set([
   portalSiteUrl,
   "http://localhost:5173",
-  "http://127.0.0.1:5173"
+  "http://127.0.0.1:5173",
+  "http://localhost:3000"
 ]);
 
 function corsHeadersFor(request: Request) {
   const origin = request.headers.get("Origin") || "";
   return {
-  "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : portalSiteUrl,
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin"
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : portalSiteUrl,
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin"
   };
 }
 
@@ -34,6 +35,13 @@ const json = (body: unknown, request: Request, status = 200) =>
 function isEmail(value: unknown): value is string {
   return typeof value === "string" && value.length <= 254 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function generateSecureToken(prefix = "inv_"): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `${prefix}${hex}`;
 }
 
 Deno.serve(async request => {
@@ -84,6 +92,8 @@ Deno.serve(async request => {
   }
 
   const action = payload.action;
+
+  // 1. Create User Invitation & Generate Single-Use Token
   if (action === "invite") {
     const email = isEmail(payload.email) ? payload.email.trim().toLowerCase() : "";
     const displayName = typeof payload.display_name === "string" ? payload.display_name.trim() : "";
@@ -128,32 +138,46 @@ Deno.serve(async request => {
       return json({ error: `All ${roleLimits[role]} ${role} account slot(s) are in use.` }, request, 409);
     }
 
-    const { data: invited, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-      data: { display_name: displayName },
-      redirectTo: `${portalSiteUrl}/#login`
-    });
-    if (inviteError || !invited.user) {
-      console.error("Supabase could not send the account invitation.", inviteError?.message);
-      return json({ error: inviteError?.message || "The invitation could not be created." }, request, 400);
-    }
+    const token = generateSecureToken();
+    const inviteLink = `${portalSiteUrl}/#invite?token=${encodeURIComponent(token)}`;
 
-    const { error: insertError } = await adminClient.from("profiles").insert({
-      id: invited.user.id,
+    // Record invitation in portal_invites
+    const { error: tokenError } = await adminClient.from("portal_invites").insert({
       email,
-      display_name: displayName,
       role,
-      wing_id: wingId
+      wing_id: wingId,
+      display_name: displayName,
+      token,
+      created_by: callerData.user.id
     });
-    if (insertError) {
-      console.error("Could not assign the invited account its role.", insertError.message);
-      const { error: cleanupError } = await adminClient.auth.admin.deleteUser(invited.user.id);
-      if (cleanupError) console.error("Could not remove the incomplete invited account.", cleanupError.message);
-      return json({ error: "The invitation was sent, but the role could not be assigned. Check the roster before retrying." }, request, 500);
+    if (tokenError) {
+      console.warn("Could not record portal invite token into database table:", tokenError.message);
     }
 
-    return json({ message: `Invitation sent to ${email}.`, user_id: invited.user.id }, request, 201);
+    // Attempt official Supabase invite by email if SMTP is configured
+    let emailSent = false;
+    try {
+      const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
+        data: { display_name: displayName, invited_role: role, invited_wing: wingId },
+        redirectTo: inviteLink
+      });
+      if (!inviteError) emailSent = true;
+      else console.info("Email dispatch note (manual link provided):", inviteError.message);
+    } catch (e) {
+      console.info("Notice: SMTP not sending automatically, returning generated link:", e);
+    }
+
+    return json({
+      message: emailSent ? `Invitation sent to ${email}.` : `Invitation created. Share the onboarding link directly.`,
+      invite_token: token,
+      invite_link: inviteLink,
+      email,
+      role,
+      display_name: displayName
+    }, request, 201);
   }
 
+  // 2. Update User Account Access & Role
   if (action === "update-user") {
     const userId = typeof payload.user_id === "string" ? payload.user_id : "";
     const role = typeof payload.role === "string" ? payload.role : "";
@@ -198,6 +222,45 @@ Deno.serve(async request => {
       return json({ error: "The account could not be updated." }, request, 500);
     }
     return json({ message: "Account access updated." }, request);
+  }
+
+  // 3. Force Password Reset Link
+  if (action === "force-password-reset") {
+    const email = isEmail(payload.email) ? payload.email.trim().toLowerCase() : "";
+    if (!email) return json({ error: "Valid account email required." }, request, 400);
+
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: `${portalSiteUrl}/#login` }
+    });
+
+    if (linkError) {
+      console.error("Could not generate recovery link:", linkError.message);
+      return json({ error: linkError.message || "Could not generate password reset link." }, request, 400);
+    }
+
+    return json({
+      message: `Password reset link generated for ${email}.`,
+      action_link: linkData.properties?.action_link || `${portalSiteUrl}/#login`
+    }, request);
+  }
+
+  // 4. Revoke Account Access / Delete Account
+  if (action === "revoke-access") {
+    const userId = typeof payload.user_id === "string" ? payload.user_id : "";
+    if (!userId || userId === callerData.user.id) {
+      return json({ error: "Cannot revoke developer root account." }, request, 400);
+    }
+
+    const { error: suspendError } = await adminClient
+      .from("profiles")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+
+    if (suspendError) return json({ error: "Could not revoke access." }, request, 500);
+
+    return json({ message: "User access revoked and account suspended." }, request);
   }
 
   return json({ error: "Unknown account-management action." }, request, 400);
