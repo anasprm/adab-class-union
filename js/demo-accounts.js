@@ -1,13 +1,13 @@
 import { initialBudgetAllocations, initialFinanceEntries, studentSeedData, wings } from "./data.js";
 
-export const DEFAULT_DEMO_PASSWORD = "AdabPortal2026!";
+export const DEFAULT_DEMO_PASSWORD = "ayra@123";
 
 export const PRESEEDED_ACCOUNTS = [
   // 1 Developer
   {
     id: "demo-dev-01",
-    email: "developer@adab.edu",
-    display_name: "Portal Developer Admin",
+    email: "anasprm390@gmail.com",
+    display_name: "Anas PRM (Developer)",
     role: "developer",
     wing_id: null,
     roll_number: "DEV-01",

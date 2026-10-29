@@ -644,13 +644,13 @@ function renderLogin() {
           <button class="button auth-submit" type="submit">${recovery ? "Send reset link" : updatePassword ? "Update password" : "Sign in"} <span aria-hidden="true">→</span></button>
         </form>
 
-        <!-- Quick 1-Click Test Accounts Modal Trigger -->
-        <div class="demo-login-box">
+        <!-- Quick 1-Click Test Accounts Modal Trigger (Hidden) -->
+        <div class="demo-login-box" style="display: none;">
           <div class="demo-login-box-header">
             <span class="badge">Pre-Seeded Accounts</span>
             <strong>Quick Role Switcher (1-Click Test)</strong>
           </div>
-          <p>Instant access to all 6 account tiers (Default password: <code>AdabPortal2026!</code>):</p>
+          <p>Instant access to all 6 account tiers (Default password: <code>ayra@123</code>):</p>
           <div class="demo-quick-buttons">
             <button type="button" class="button-demo-quick" data-demo-role="developer">Developer (Root)</button>
             <button type="button" class="button-demo-quick" data-demo-role="teacher">Class Teacher</button>
