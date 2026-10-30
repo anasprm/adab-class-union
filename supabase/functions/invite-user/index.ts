@@ -24,7 +24,7 @@ const roleLimits: Record<string, number> = {
   committee: 1,
   treasurer: 1,
   student: 15,
-  wing: 7
+  wing: 8
 };
 
 const json = (body: unknown, request: Request, status = 200) =>

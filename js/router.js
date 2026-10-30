@@ -948,7 +948,7 @@ function renderAdmin() {
     return `<div class="page-shell"><header><p class="eyebrow">Restricted area</p><h1 class="page-title">Developer access required.</h1><p class="lead">Only the Developer account can manage user invitations, dynamic UI copy, role assignments, and wing configurations.</p></header></div>`;
   }
 
-  const roleCapacities = { developer: 1, teacher: 1, committee: 1, treasurer: 1, student: 15, wing: 7 };
+  const roleCapacities = { developer: 1, teacher: 1, committee: 1, treasurer: 1, student: 15, wing: 8 };
   const accounts = adminProfiles || PRESEEDED_ACCOUNTS;
   const roleCounts = Object.fromEntries(Object.keys(roleCapacities).map(role => [
     role,
