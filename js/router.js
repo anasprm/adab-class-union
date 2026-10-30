@@ -770,25 +770,20 @@ function renderAccount() {
 
   // Teacher & Committee Dashboard (Supervisory / Union Operations)
   if (canManageUnion(profile)) {
-    return `<div class="page-shell">
-      <header>
-        <div class="finance-header-badge-row"><span class="badge">${escapeHTML(roleTitle)}</span></div>
-        <h1 class="page-title">${roleTitle} Dashboard.</h1>
-        <p class="lead">${profile.role === "teacher" ? "Supervise student activities, approve student work submissions, and monitor class union announcements and finances." : "Publish class union updates, moderate student creative works, and coordinate union events."}</p>
-      </header>
-
-      <section class="section-block account-overview">
-        <div>
-          <span class="badge">${escapeHTML(roleTitle)}</span>
-          <h2>${escapeHTML(profile.display_name)}</h2>
-          <p>${escapeHTML(currentUser.email)}</p>
+    return `<div class="page-shell account-dashboard-shell">
+      <section class="account-hero-banner">
+        <div class="account-hero-left">
+          <div class="finance-header-badge-row">
+            <span class="badge badge-red">${escapeHTML(roleTitle)}</span>
+            <span class="badge badge-neutral">${escapeHTML(profile.role === "teacher" ? "Class Supervisor" : "Core Leadership")}</span>
+          </div>
+          <h1 class="page-title">${escapeHTML(profile.display_name)}</h1>
+          <p class="lead">${escapeHTML(currentUser.email)} · ${profile.role === "teacher" ? "Supervising student activities & approvals" : "Managing union publications & events"}</p>
         </div>
-        <div class="overview-buttons">
-          <a class="button" href="#finance">Review Full Financial Ledger →</a>
+        <div class="account-hero-actions">
+          <a class="button" href="#finance">Review Financial Ledger <span aria-hidden="true">→</span></a>
           ${profile.role === "developer" ? `<a class="button button-secondary" href="#admin">Open Manage Portal</a>` : ""}
-          <button class="button button-secondary" type="button" data-action="sign-out">Sign out</button>
-        </div>
-      </section>
+          <button class="button button-secondary button-danger-subtle" type="button" data-action="sign-out">Sign out</button>
         </div>
       </section>
 
