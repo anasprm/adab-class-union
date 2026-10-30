@@ -29,7 +29,7 @@ export const DEFAULT_CONTENT = {
 
   // Wings Section
   wings_eyebrow: "Find your way in",
-  wings_title: "7 Dedicated Wings. Many ways to belong.",
+  wings_title: "8 Dedicated Wings. Many ways to belong.",
   wings_lead: "Our student wings turn shared passions into practical, welcoming activities. Pick a domain and lead with your perspective.",
 
   // Works Section

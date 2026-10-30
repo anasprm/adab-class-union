@@ -95,6 +95,18 @@ export const wings = [
       "Ethics & leadership discussion circles",
       "Values & integrity dialogues"
     ]
+  },
+  {
+    id: "pkv",
+    name: "PKV",
+    icon: "🎯",
+    accent: "PKV",
+    objective: "A dedicated wing for PKV programmes, peer collaboration, and class-wide participation.",
+    activities: [
+      "Weekly PKV sessions",
+      "Inter-house PKV competitions",
+      "Student-led PKV projects"
+    ]
   }
 ];
 

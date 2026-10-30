@@ -12,3 +12,5 @@ _old_qaaf_backup/
 
 .vercel
 .env*
+
+.idea/
