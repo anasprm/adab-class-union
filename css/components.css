@@ -255,6 +255,9 @@
 }
 .account-overview h2 { margin: 11px 0 4px; font-size: 1.25rem; }
 .account-overview p { margin: 0; color: var(--text-muted); }
+.account-overview .overview-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.account-overview .overview-buttons .button,
+.account-overview .overview-buttons .button-secondary { flex: 1; min-width: 130px; }
 .finance-summary article { display: grid; gap: 6px; padding: 15px; border-radius: 10px; background: var(--bg-main); }
 .finance-summary span { color: var(--text-muted); font-size: .82rem; }
 .finance-summary strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
@@ -372,6 +375,19 @@
 .auth-required p { max-width: 470px; margin: 0; color: var(--text-muted); }
 .toast-error { border-color: #fca5a5; border-left-color: #b91c1c; }
 .toast-error::before { color: #b91c1c; content: "!"; }
+
+.signout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: .78rem;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.signout-btn:hover { background: var(--red-light); color: var(--red-primary); }
+.signout-btn:focus-visible { outline: 2px solid var(--red-primary); outline-offset: 2px; }
+
 @keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
