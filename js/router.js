@@ -742,6 +742,9 @@ function renderAccount() {
           <a class="button" href="#works">Go to work upload form →</a>
         </div>
       </section>
+      <section class="section-block">
+        <button class="button button-secondary" type="button" data-action="sign-out">Sign out of account</button>
+      </section>
     </div>`;
   }
 
@@ -763,6 +766,9 @@ function renderAccount() {
         <div class="overview-buttons">
           <a class="button" href="#finance">Review Full Financial Ledger →</a>
           ${profile.role === "developer" ? `<a class="button button-secondary" href="#admin">Open Manage Portal</a>` : ""}
+          <button class="button button-secondary" type="button" data-action="sign-out">Sign out</button>
+        </div>
+      </section>
         </div>
       </section>
 
@@ -844,6 +850,7 @@ function renderAccount() {
         </div>
         <div class="overview-buttons">
           <a class="button" href="#finance">Open Private Finance Ledger →</a>
+          <button class="button button-secondary" type="button" data-action="sign-out">Sign out</button>
         </div>
       </section>
     </div>`;
@@ -867,6 +874,7 @@ function renderAccount() {
         </div>
         <div class="overview-buttons">
           <a class="button" href="#finance">View Private Finance Ledger →</a>
+          <button class="button button-secondary" type="button" data-action="sign-out">Sign out</button>
         </div>
       </section>
 
@@ -914,6 +922,7 @@ function renderAccount() {
       <div class="overview-buttons">
         <a class="button" href="#admin">Open Manage Portal & RBAC →</a>
         <a class="button button-secondary" href="#finance">Open Private Finance Ledger</a>
+        <button class="button button-secondary" type="button" data-action="sign-out">Sign out</button>
       </div>
     </section>
   </div>`;
@@ -952,23 +961,23 @@ function renderAdmin() {
 
     <!-- Admin Navigation Tabs -->
     <div class="admin-tab-nav" role="tablist" aria-label="Admin sections">
-      <a class="admin-tab-btn ${adminActiveTab === "create" ? "is-active" : ""}" href="#admin" data-admin-tab="create" role="tab" aria-selected="${adminActiveTab === "create"}">
+      <a class="admin-tab-btn ${adminActiveTab === "create" ? "is-active" : ""}" href="#admin?tab=create" data-admin-tab="create" role="tab" aria-selected="${adminActiveTab === "create"}">
         <span class="admin-tab-icon" aria-hidden="true">＋</span>
         <span class="admin-tab-copy"><strong>Create account</strong><small>Username &amp; password</small></span>
       </a>
-      <a class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" href="#admin" data-admin-tab="invites" role="tab" aria-selected="${adminActiveTab === "invites"}">
+      <a class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" href="#admin?tab=invites" data-admin-tab="invites" role="tab" aria-selected="${adminActiveTab === "invites"}">
         <span class="admin-tab-icon" aria-hidden="true">✉</span>
         <span class="admin-tab-copy"><strong>Email invites</strong><small>Single-use links</small></span>
       </a>
-      <a class="admin-tab-btn ${adminActiveTab === "roster" ? "is-active" : ""}" href="#admin" data-admin-tab="roster" role="tab" aria-selected="${adminActiveTab === "roster"}">
+      <a class="admin-tab-btn ${adminActiveTab === "roster" ? "is-active" : ""}" href="#admin?tab=roster" data-admin-tab="roster" role="tab" aria-selected="${adminActiveTab === "roster"}">
         <span class="admin-tab-icon" aria-hidden="true">☰</span>
         <span class="admin-tab-copy"><strong>Account roster</strong><small>Roles &amp; lifecycles</small></span>
       </a>
-      <a class="admin-tab-btn ${adminActiveTab === "content" ? "is-active" : ""}" href="#admin" data-admin-tab="content" role="tab" aria-selected="${adminActiveTab === "content"}">
+      <a class="admin-tab-btn ${adminActiveTab === "content" ? "is-active" : ""}" href="#admin?tab=content" data-admin-tab="content" role="tab" aria-selected="${adminActiveTab === "content"}">
         <span class="admin-tab-icon" aria-hidden="true">✎</span>
         <span class="admin-tab-copy"><strong>Page copy</strong><small>Headlines &amp; text</small></span>
       </a>
-      <a class="admin-tab-btn ${adminActiveTab === "wings" ? "is-active" : ""}" href="#admin" data-admin-tab="wings" role="tab" aria-selected="${adminActiveTab === "wings"}">
+      <a class="admin-tab-btn ${adminActiveTab === "wings" ? "is-active" : ""}" href="#admin?tab=wings" data-admin-tab="wings" role="tab" aria-selected="${adminActiveTab === "wings"}">
         <span class="admin-tab-icon" aria-hidden="true">◈</span>
         <span class="admin-tab-copy"><strong>Wings</strong><small>7 student domains</small></span>
       </a>
@@ -996,11 +1005,12 @@ function renderAdmin() {
             <div class="form-field">
               <label for="create-name">Display name</label>
               <input id="create-name" name="display_name" required maxlength="80" placeholder="e.g. Muhammed Riyas">
+              <small class="form-note">Full name shown across portal rosters and works.</small>
             </div>
             <div class="form-field">
               <label for="create-password">Initial password</label>
               <input id="create-password" name="password" type="text" required minlength="8" maxlength="72" placeholder="At least 8 characters" autocomplete="new-password">
-              <small class="form-note">Share this password with the account holder. You can change it later from the roster.</small>
+              <small class="form-note">Share this password with the account holder.</small>
             </div>
             <div class="form-field">
               <label for="create-role">Account role</label>
@@ -1011,6 +1021,7 @@ function renderAdmin() {
                 <option value="treasurer">Treasurer</option>
                 <option value="wing">Wing Account</option>
               </select>
+              <small class="form-note">Controls access permissions across all sections.</small>
             </div>
           </div>
           <div class="form-field admin-wing-field" id="create-wing-field" hidden>
@@ -1459,12 +1470,23 @@ export function setContentCategory(cat) {
 }
 
 export function getActiveRoute() {
-  const hash = location.hash.slice(1).split("?")[0].split("#")[0];
-  if (hash.startsWith("admin/invite") || hash === "admin-invite") {
+  const fullHash = location.hash.slice(1);
+  const [baseRoute, queryString] = fullHash.split("?");
+  const route = baseRoute.split("#")[0];
+
+  if (route === "admin" && queryString) {
+    const params = new URLSearchParams(queryString);
+    const tabParam = params.get("tab");
+    if (tabParam && ["create", "invites", "roster", "content", "wings"].includes(tabParam)) {
+      adminActiveTab = tabParam;
+    }
+  }
+
+  if (route.startsWith("admin/invite") || route === "admin-invite") {
     adminActiveTab = "invites";
     return "admin";
   }
-  return Object.hasOwn(views, hash) ? hash : "home";
+  return Object.hasOwn(views, route) ? route : "home";
 }
 
 export function renderRoute(route = getActiveRoute()) {

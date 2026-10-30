@@ -297,7 +297,9 @@ document.addEventListener("click", event => {
   const adminTab = event.target instanceof Element ? event.target.closest("[data-admin-tab]") : null;
   if (adminTab) {
     event.preventDefault();
-    setAdminActiveTab(adminTab.dataset.adminTab);
+    const tabName = adminTab.dataset.adminTab;
+    setAdminActiveTab(tabName);
+    location.hash = `admin?tab=${tabName}`;
     renderRoute();
   }
 
