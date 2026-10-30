@@ -1,0 +1,39 @@
+/* Modern Account Page Design System */
+.account-hero-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  padding: 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--bg-card) 0%, color-mix(in srgb, var(--red-light) 30%, var(--bg-card)) 100%);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 35px;
+}
+.account-hero-left { max-width: 650px; }
+.account-hero-left h1 { margin: 12px 0 6px; font-size: 1.85rem; letter-spacing: -.03em; }
+.account-hero-left p.lead { margin: 0 0 16px; color: var(--text-muted); font-size: .95rem; }
+.profile-bio-card { margin-top: 14px; padding: 14px 18px; border-left: 3px solid var(--red-primary); border-radius: 0 12px 12px 0; background: var(--bg-main); color: var(--text-muted); font-size: .9rem; }
+.account-hero-actions { display: flex; flex-direction: column; gap: 12px; min-width: 240px; align-self: stretch; justify-content: center; }
+.account-hero-actions .button { width: 100%; justify-content: center; }
+.button-danger-subtle { border-color: var(--red-border); color: var(--red-primary); background: var(--red-light); }
+.button-danger-subtle:hover { background: color-mix(in srgb, var(--red-primary) 12%, var(--bg-card)); }
+
+.account-content-grid { display: grid; grid-template-columns: 1fr 340px; gap: 30px; align-items: start; }
+.account-main-card { padding: 34px; border: 1px solid var(--border-color); border-radius: 20px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
+.account-sidebar-card { padding: 30px; border: 1px solid var(--border-color); border-radius: 20px; background: var(--bg-card); display: grid; gap: 14px; }
+.account-sidebar-card h3 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
+.account-sidebar-card p { margin: 0; color: var(--text-muted); font-size: .88rem; }
+.form-submit-row { display: flex; align-items: center; justify-content: flex-end; margin-top: 28px; padding-top: 22px; border-top: 1px dashed var(--border-color); }
+
+@media (max-width: 980px) {
+  .account-hero-banner { flex-direction: column; padding: 28px; gap: 24px; }
+  .account-hero-actions { width: 100%; flex-direction: row; flex-wrap: wrap; }
+  .account-hero-actions .button { flex: 1; min-width: 180px; }
+  .account-content-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .account-hero-actions { flex-direction: column; }
+  .account-hero-actions .button { width: 100%; }
+}

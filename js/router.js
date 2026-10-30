@@ -683,67 +683,87 @@ function renderAccount() {
 
   // Student Dashboard
   if (profile.role === "student") {
-    return `<div class="page-shell">
-      <header>
-        <div class="finance-header-badge-row"><span class="badge">${escapeHTML(roleTitle)}</span></div>
-        <h1 class="page-title">Hello, ${escapeHTML(profile.display_name)}.</h1>
-        <p class="lead">Manage your student profile, upload creative & tech projects, and view class union resources.</p>
-      </header>
-
-      <!-- Profile Overview & Quick Shortcuts -->
-      <section class="section-block account-overview">
-        <div>
-          <span class="badge">${escapeHTML(profile.roll_number || "Student")}</span>
-          <h2>${escapeHTML(profile.display_name)}</h2>
-          <p>${escapeHTML(currentUser.email)} · ${escapeHTML(profile.house_team || "No House")} · ${escapeHTML(profile.district || "Kerala")}</p>
-          ${profile.bio ? `<p class="profile-bio-text"><em>"${escapeHTML(profile.bio)}"</em></p>` : ""}
+    return `<div class="page-shell account-dashboard-shell">
+      <!-- Top Hero Welcome Banner -->
+      <section class="account-hero-banner">
+        <div class="account-hero-left">
+          <div class="finance-header-badge-row">
+            <span class="badge badge-red">${escapeHTML(roleTitle)}</span>
+            <span class="badge badge-neutral">${escapeHTML(profile.roll_number || "Student")}</span>
+            <span class="badge badge-neutral">${escapeHTML(profile.house_team || "No House")}</span>
+          </div>
+          <h1 class="page-title">Welcome back, ${escapeHTML(profile.display_name)}.</h1>
+          <p class="lead">${escapeHTML(currentUser.email)} · ${escapeHTML(profile.district || "Kerala")}</p>
+          ${profile.bio ? `<p class="profile-bio-card"><em>"${escapeHTML(profile.bio)}"</em></p>` : ""}
         </div>
-        <div class="overview-buttons">
-          <a class="button" href="#finance">View Private Finance Ledger →</a>
+        <div class="account-hero-actions">
+          <a class="button" href="#finance">View Private Finance Ledger <span aria-hidden="true">→</span></a>
           <a class="button button-secondary" href="#works">Explore Student Works</a>
+          <button class="button button-secondary button-danger-subtle" type="button" data-action="sign-out">Sign out of account</button>
         </div>
       </section>
 
-      <!-- Profile Customization -->
-      <section class="section-block">
-        <div class="section-heading"><div><p class="eyebrow">Personal profile</p><h2 class="section-title">Update your details & preferences</h2></div></div>
-        <form class="contact-form" id="profile-form">
-          <div class="form-row">
-            <div class="form-field"><label for="profile-name">Display name</label><input id="profile-name" name="display_name" required maxlength="80" value="${escapeHTML(profile.display_name)}"></div>
-            <div class="form-field"><label for="profile-roll">Roll number</label><input id="profile-roll" name="roll_number" maxlength="30" value="${escapeHTML(profile.roll_number || "")}"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-field">
-              <label for="profile-house">House team</label>
-              <select id="profile-house" name="house_team">
-                <option value="">Select house</option>
-                ${["Red Knights", "White Warriors", "Crimson Falcons"].map(h => `<option ${profile.house_team === h ? "selected" : ""}>${h}</option>`).join("")}
-              </select>
+      <!-- Profile Customization & Details -->
+      <section class="section-block account-content-grid">
+        <div class="account-main-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Personal profile</p>
+              <h2 class="section-title">Update your details & preferences</h2>
             </div>
-            <div class="form-field"><label for="profile-district">District</label><input id="profile-district" name="district" maxlength="60" value="${escapeHTML(profile.district || "")}"></div>
           </div>
-          <div class="form-field">
-            <label for="profile-bio">Student bio (interests, skills, aspirations)</label>
-            <textarea id="profile-bio" name="bio" maxlength="500" placeholder="A brief note about yourself, your interests, and your role in the class...">${escapeHTML(profile.bio || "")}</textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-field"><label for="profile-github">GitHub / Code profile link (optional)</label><input id="profile-github" name="github_url" type="url" placeholder="https://github.com/..." value="${escapeHTML(profile.social_links?.github || "")}"></div>
-            <div class="form-field"><label for="profile-portfolio">Portfolio or personal website (optional)</label><input id="profile-portfolio" name="portfolio_url" type="url" placeholder="https://..." value="${escapeHTML(profile.social_links?.portfolio || "")}"></div>
-          </div>
-          <button class="button" type="submit">Save profile details</button>
-        </form>
-      </section>
-
-      <!-- Work Upload Portal Direct Link -->
-      <section class="section-block">
-        <div class="section-heading"><div><p class="eyebrow">Creative & code submissions</p><h2 class="section-title">Share your work with the class</h2></div></div>
-        <div class="card card-body">
-          <p>Submit your articles, poetry, Arabic/English calligraphy, digital art, science projects, or coding repositories for union moderation.</p>
-          <a class="button" href="#works">Go to work upload form →</a>
+          <form class="contact-form" id="profile-form">
+            <div class="form-row">
+              <div class="form-field">
+                <label for="profile-name">Display name</label>
+                <input id="profile-name" name="display_name" required maxlength="80" value="${escapeHTML(profile.display_name)}">
+              </div>
+              <div class="form-field">
+                <label for="profile-roll">Roll number</label>
+                <input id="profile-roll" name="roll_number" maxlength="30" value="${escapeHTML(profile.roll_number || "")}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="profile-house">House team</label>
+                <select id="profile-house" name="house_team">
+                  <option value="">Select house</option>
+                  ${["Red Knights", "White Warriors", "Crimson Falcons"].map(h => `<option ${profile.house_team === h ? "selected" : ""}>${h}</option>`).join("")}
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="profile-district">District</label>
+                <input id="profile-district" name="district" maxlength="60" value="${escapeHTML(profile.district || "")}">
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="profile-bio">Student bio (interests, skills, aspirations)</label>
+              <textarea id="profile-bio" name="bio" maxlength="500" placeholder="A brief note about yourself, your interests, and your role in the class...">${escapeHTML(profile.bio || "")}</textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="profile-github">GitHub / Code profile link</label>
+                <input id="profile-github" name="github_url" type="url" placeholder="https://github.com/..." value="${escapeHTML(profile.social_links?.github || "")}">
+              </div>
+              <div class="form-field">
+                <label for="profile-portfolio">Portfolio or personal website</label>
+                <input id="profile-portfolio" name="portfolio_url" type="url" placeholder="https://..." value="${escapeHTML(profile.social_links?.portfolio || "")}">
+              </div>
+            </div>
+            <div class="form-submit-row">
+              <button class="button" type="submit">Save profile details</button>
+            </div>
+          </form>
         </div>
-      </section>
-      <section class="section-block">
-        <button class="button button-secondary" type="button" data-action="sign-out">Sign out of account</button>
+
+        <div class="account-sidebar">
+          <div class="card card-body account-sidebar-card">
+            <div class="admin-panel-icon" aria-hidden="true">✦</div>
+            <h3>Creative & code submissions</h3>
+            <p>Submit your articles, poetry, Arabic/English calligraphy, digital art, science projects, or coding repositories for union moderation.</p>
+            <a class="button button-secondary" href="#works">Go to work upload form →</a>
+          </div>
+        </div>
       </section>
     </div>`;
   }
