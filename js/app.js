@@ -420,6 +420,16 @@ document.addEventListener("click", event => {
     }).catch(error => showDatabaseError("Revoking account access", error));
   }
 
+  const revokeInvite = event.target instanceof Element ? event.target.closest("[data-revoke-invite]") : null;
+  if (revokeInvite && currentProfile?.role === "developer") {
+    const inviteId = revokeInvite.dataset.revokeInvite;
+    const invites = getDemoInvites();
+    const updatedInvites = invites.map(inv => inv.id === inviteId || inv.token === inviteId ? { ...inv, status: "revoked" } : inv);
+    saveDemoInvites(updatedInvites);
+    showToast("Invitation revoked.");
+    renderRoute();
+  }
+
   const link = event.target instanceof Element ? event.target.closest('a[href="#home#suggestions"]') : null;
   if (link) {
     event.preventDefault();
