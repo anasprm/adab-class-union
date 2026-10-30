@@ -1,6 +1,7 @@
 import {
   getActiveRoute,
   renderRoute,
+  setAdminActiveTab,
   setAdminProfiles,
   setAnnouncements,
   setAuthFeedback,
@@ -8,6 +9,7 @@ import {
   setCurrentProfile,
   setCurrentUser,
   setFinanceEntries,
+  setLastCreatedAccount,
   setPortalEvents,
   setPortalMembers,
   setPortalWings,
@@ -292,6 +294,13 @@ document.addEventListener("click", event => {
   const authMode = event.target instanceof Element ? event.target.closest("button[data-auth-mode]") : null;
   if (authMode) setAuthMode(authMode.dataset.authMode);
 
+  const adminTab = event.target instanceof Element ? event.target.closest("[data-admin-tab]") : null;
+  if (adminTab) {
+    event.preventDefault();
+    setAdminActiveTab(adminTab.dataset.adminTab);
+    renderRoute();
+  }
+
   const fileLink = event.target instanceof Element ? event.target.closest("[data-finance-file]") : null;
   if (fileLink && currentProfile) requestPrivateFile(fileLink.dataset.financeFile);
   const workFile = event.target instanceof Element ? event.target.closest("[data-work-file]") : null;
@@ -457,7 +466,15 @@ document.addEventListener("submit", event => {
     const password = String(formData.get("password") || "");
 
     if (mode === "signin") {
-      supabase.auth.signInWithPassword({ email, password }).then(({ data, error }) => {
+      (async () => {
+        let loginEmail = email;
+        if (!identifier.includes("@")) {
+          const { data: resolved, error: resolveError } = await supabase.rpc("resolve_login_email", {
+            username_input: identifier
+          });
+          if (!resolveError && resolved) loginEmail = resolved;
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) {
           setAuthFeedback(error.message);
         } else if (data.session) {
@@ -466,7 +483,7 @@ document.addEventListener("submit", event => {
         } else {
           setAuthFeedback("Sign-in completed without an active session. Please try again.");
         }
-      }).catch(showAuthNetworkError);
+      })().catch(showAuthNetworkError);
     } else if (mode === "recovery") {
       const redirectTo = `${location.origin}${location.pathname}#login`;
       supabase.auth.resetPasswordForEmail(email, { redirectTo }).then(({ error }) => {
@@ -556,6 +573,7 @@ document.addEventListener("submit", event => {
       if (message) message.textContent = data?.message || "Account created.";
       if (credentials) credentials.value = `Username: ${data?.username}    Password: ${data?.password}`;
       if (container) container.hidden = false;
+      setLastCreatedAccount(data || null);
       form.reset();
       const wingField = document.querySelector("#create-wing-field");
       if (wingField) wingField.hidden = true;

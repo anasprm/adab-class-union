@@ -10,8 +10,9 @@ const allowedOrigins = new Set([
 
 function corsHeadersFor(request: Request) {
   const origin = request.headers.get("Origin") || "";
+  const allowed = allowedOrigins.has(origin) || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
   return {
-    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : portalSiteUrl,
+    "Access-Control-Allow-Origin": allowed ? origin : portalSiteUrl,
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin"

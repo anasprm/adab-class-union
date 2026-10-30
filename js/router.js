@@ -53,6 +53,7 @@ let reviewSuggestions = [];
 let financeLoading = false;
 let adminLoading = false;
 let adminActiveTab = "create"; // 'create', 'invites', 'roster', 'content', 'wings'
+let lastCreatedAccount = null;
 let financeFilterType = "all"; // 'all', 'income', 'expense'
 let financeSearchQuery = "";
 let contentSearchQuery = "";
@@ -932,80 +933,139 @@ function renderAdmin() {
 
   const invites = getDemoInvites();
 
-  return `<div class="page-shell">
-    <header>
-      <div class="finance-header-badge-row"><span class="badge">Developer Control</span></div>
-      <p class="eyebrow">Administrative portal</p>
-      <h1 class="page-title">Manage the union portal.</h1>
-      <p class="lead">Configure invitations, monitor account lifecycles, customize global copy strings across all pages, and configure student wings.</p>
+  return `<div class="page-shell admin-page">
+    <header class="admin-header">
+      <div class="admin-header-copy">
+        <span class="admin-kicker"><span class="admin-kicker-dot" aria-hidden="true"></span> Developer control</span>
+        <h1 class="page-title">Manage the union portal.</h1>
+        <p class="lead">Create accounts, manage access, customise every word, and keep the seven wings up to date — all from one place.</p>
+      </div>
+      <div class="admin-identity">
+        <span class="admin-identity-avatar" aria-hidden="true">A</span>
+        <div>
+          <small>Signed in as</small>
+          <strong>@${escapeHTML(currentProfile?.username || "developer")}</strong>
+          <span>Root administrator</span>
+        </div>
+      </div>
     </header>
 
     <!-- Admin Navigation Tabs -->
-    <div class="admin-tab-nav" role="tablist">
-      <button type="button" class="admin-tab-btn ${adminActiveTab === "create" ? "is-active" : ""}" data-admin-tab="create">Create Account (Username & Password)</button>
-      <button type="button" class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" data-admin-tab="invites">Email Invitations (/admin/invite)</button>
-      <button type="button" class="admin-tab-btn ${adminActiveTab === "roster" ? "is-active" : ""}" data-admin-tab="roster">Account Roster & Lifecycles</button>
-      <button type="button" class="admin-tab-btn ${adminActiveTab === "content" ? "is-active" : ""}" data-admin-tab="content">Dynamic Copy & Content Editor</button>
-      <button type="button" class="admin-tab-btn ${adminActiveTab === "wings" ? "is-active" : ""}" data-admin-tab="wings">Student Wings Editor (7 Wings)</button>
+    <div class="admin-tab-nav" role="tablist" aria-label="Admin sections">
+      <a class="admin-tab-btn ${adminActiveTab === "create" ? "is-active" : ""}" href="#admin" data-admin-tab="create" role="tab" aria-selected="${adminActiveTab === "create"}">
+        <span class="admin-tab-icon" aria-hidden="true">＋</span>
+        <span class="admin-tab-copy"><strong>Create account</strong><small>Username &amp; password</small></span>
+      </a>
+      <a class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" href="#admin" data-admin-tab="invites" role="tab" aria-selected="${adminActiveTab === "invites"}">
+        <span class="admin-tab-icon" aria-hidden="true">✉</span>
+        <span class="admin-tab-copy"><strong>Email invites</strong><small>Single-use links</small></span>
+      </a>
+      <a class="admin-tab-btn ${adminActiveTab === "roster" ? "is-active" : ""}" href="#admin" data-admin-tab="roster" role="tab" aria-selected="${adminActiveTab === "roster"}">
+        <span class="admin-tab-icon" aria-hidden="true">☰</span>
+        <span class="admin-tab-copy"><strong>Account roster</strong><small>Roles &amp; lifecycles</small></span>
+      </a>
+      <a class="admin-tab-btn ${adminActiveTab === "content" ? "is-active" : ""}" href="#admin" data-admin-tab="content" role="tab" aria-selected="${adminActiveTab === "content"}">
+        <span class="admin-tab-icon" aria-hidden="true">✎</span>
+        <span class="admin-tab-copy"><strong>Page copy</strong><small>Headlines &amp; text</small></span>
+      </a>
+      <a class="admin-tab-btn ${adminActiveTab === "wings" ? "is-active" : ""}" href="#admin" data-admin-tab="wings" role="tab" aria-selected="${adminActiveTab === "wings"}">
+        <span class="admin-tab-icon" aria-hidden="true">◈</span>
+        <span class="admin-tab-copy"><strong>Wings</strong><small>7 student domains</small></span>
+      </a>
     </div>
 
     <!-- TAB 0: Direct account creation with username and password -->
     ${adminActiveTab === "create" ? `
-    <section class="section-block">
-      <div class="section-heading"><div><p class="eyebrow">Direct account provisioning</p><h2 class="section-title">Create an account with a username and password</h2></div></div>
-      <p class="form-note">Choose any username you like — no email address is needed. Share the username and password with the person. They sign in from the normal Sign in page using those exact details.</p>
-
-      <form class="contact-form" id="create-account-form">
-        <div class="form-row">
-          <div class="form-field">
-            <label for="create-username">Username</label>
-            <input id="create-username" name="username" required minlength="3" maxlength="30" pattern="[a-z0-9][a-z0-9._\\-]{2,29}" placeholder="e.g. riyas" autocomplete="off">
-            <small class="form-note">3–30 characters: lowercase letters, numbers, dots, underscores, or hyphens.</small>
+    <div class="admin-grid">
+      <section class="admin-panel">
+        <div class="admin-panel-head">
+          <span class="admin-panel-icon" aria-hidden="true">＋</span>
+          <div>
+            <h2>Create an account</h2>
+            <p>No email address needed. Pick a username and password, share them with the person, and they can sign in immediately.</p>
           </div>
-          <div class="form-field"><label for="create-name">Display name</label><input id="create-name" name="display_name" required maxlength="80" placeholder="e.g. Muhammed Riyas"></div>
         </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="create-password">Initial password</label>
-            <input id="create-password" name="password" type="text" required minlength="8" maxlength="72" placeholder="At least 8 characters" autocomplete="new-password">
+
+        <form class="admin-form" id="create-account-form">
+          <div class="admin-field-grid">
+            <div class="form-field">
+              <label for="create-username">Username</label>
+              <input id="create-username" name="username" required minlength="3" maxlength="30" pattern="[a-z0-9][a-z0-9._\\-]{2,29}" placeholder="e.g. riyas" autocomplete="off">
+              <small class="form-note">3–30 characters. Lowercase letters, numbers, dots, underscores, or hyphens.</small>
+            </div>
+            <div class="form-field">
+              <label for="create-name">Display name</label>
+              <input id="create-name" name="display_name" required maxlength="80" placeholder="e.g. Muhammed Riyas">
+            </div>
+            <div class="form-field">
+              <label for="create-password">Initial password</label>
+              <input id="create-password" name="password" type="text" required minlength="8" maxlength="72" placeholder="At least 8 characters" autocomplete="new-password">
+              <small class="form-note">Share this password with the account holder. You can change it later from the roster.</small>
+            </div>
+            <div class="form-field">
+              <label for="create-role">Account role</label>
+              <select id="create-role" name="role" required>
+                <option value="student">Student</option>
+                <option value="teacher">Class Teacher</option>
+                <option value="committee">Core Committee</option>
+                <option value="treasurer">Treasurer</option>
+                <option value="wing">Wing Account</option>
+              </select>
+            </div>
           </div>
-          <div class="form-field">
-            <label for="create-role">Account role</label>
-            <select id="create-role" name="role" required>
-              <option value="student">Student</option>
-              <option value="teacher">Class Teacher</option>
-              <option value="committee">Core Committee</option>
-              <option value="treasurer">Treasurer</option>
-              <option value="wing">Wing Account</option>
+          <div class="form-field admin-wing-field" id="create-wing-field" hidden>
+            <label for="create-wing">Assigned wing</label>
+            <select id="create-wing" name="wing_id">
+              ${portalWings.map(w => `<option value="${escapeHTML(w.id)}">${escapeHTML(w.name)}</option>`).join("")}
             </select>
           </div>
-        </div>
-        <div class="form-field" id="create-wing-field" hidden>
-          <label for="create-wing">Assigned wing</label>
-          <select id="create-wing" name="wing_id">
-            ${portalWings.map(w => `<option value="${escapeHTML(w.id)}">${escapeHTML(w.name)}</option>`).join("")}
-          </select>
-        </div>
-        <button class="button" type="submit">Create account <span aria-hidden="true">→</span></button>
-      </form>
-
-      <div id="create-result-container" class="invite-result-container" hidden>
-        <div class="invite-result-card">
-          <span class="badge badge-success">Account created successfully</span>
-          <p id="create-result-message"></p>
-          <div class="invite-link-row">
-            <input type="text" id="create-result-credentials" readonly>
-            <button type="button" class="button" id="copy-credentials-btn">Copy</button>
+          <div class="admin-form-actions">
+            <button class="button" type="submit">Create account <span aria-hidden="true">→</span></button>
+            <span class="admin-form-hint">The account is active as soon as it is created.</span>
           </div>
-          <p class="form-note">The account is active immediately. The person can sign in at <strong>/#login</strong> with this username and password.</p>
-        </div>
-      </div>
+        </form>
 
-      <div class="section-block">
-        <div class="section-heading"><div><p class="eyebrow">Account slots</p><h2 class="section-title">Available roles</h2></div></div>
-        <div class="finance-summary">${Object.entries(roleCapacities).map(([r, limit]) => `<article class="capacity-card"><span>${escapeHTML(roleNames[r] || r)}</span><strong>${roleCounts[r]} / ${limit}</strong></article>`).join("")}</div>
-      </div>
-    </section>` : ""}
+        <div id="create-result-container" class="admin-result ${lastCreatedAccount ? "" : "is-hidden"}" ${lastCreatedAccount ? "" : "hidden"}>
+          <div class="admin-result-icon" aria-hidden="true">✓</div>
+          <div class="admin-result-body">
+            <strong>Account created</strong>
+            <p id="create-result-message">${lastCreatedAccount ? escapeHTML(lastCreatedAccount.message || "") : ""}</p>
+            <div class="invite-link-row">
+              <input type="text" id="create-result-credentials" readonly value="${lastCreatedAccount ? escapeHTML(`Username: ${lastCreatedAccount.username}    Password: ${lastCreatedAccount.password}`) : ""}">
+              <button type="button" class="button button-secondary" id="copy-credentials-btn">Copy</button>
+            </div>
+            <p class="form-note">Sign in at <strong>/#login</strong> with this username and password.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="admin-side">
+        <section class="admin-panel admin-panel-compact">
+          <div class="admin-panel-head">
+            <span class="admin-panel-icon" aria-hidden="true">◎</span>
+            <div><h2>Account slots</h2><p>Active accounts against each role limit.</p></div>
+          </div>
+          <div class="admin-role-list">
+            ${Object.entries(roleCapacities).map(([r, limit]) => {
+              const used = roleCounts[r] || 0;
+              const pct = Math.min(100, Math.round((used / limit) * 100));
+              return `<div class="admin-role-row">
+                <div class="admin-role-label"><span>${escapeHTML(roleNames[r] || r)}</span><strong>${used}<small>/${limit}</small></strong></div>
+                <div class="admin-role-bar"><span style="width:${pct}%"></span></div>
+              </div>`;
+            }).join("")}
+          </div>
+        </section>
+
+        <section class="admin-note">
+          <span class="admin-note-icon" aria-hidden="true">i</span>
+          <div>
+            <strong>How sign-in works</strong>
+            <p>Accounts created here sign in with their username — no email address required. Open the roster to suspend, reactivate, reset a password, or revoke access.</p>
+          </div>
+        </section>
+      </aside>
+    </div>` : ""}
 
     <!-- TAB 1: User Invitations (/admin/invite) -->
     ${adminActiveTab === "invites" ? `
@@ -1376,6 +1436,10 @@ export function setReviewData(works, suggestions) {
   reviewWorks = works || [];
   reviewSuggestions = suggestions || [];
   if (getActiveRoute() === "account") renderRoute();
+}
+
+export function setLastCreatedAccount(account) {
+  lastCreatedAccount = account;
 }
 
 export function setAdminActiveTab(tab) {
