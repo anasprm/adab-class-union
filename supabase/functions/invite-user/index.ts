@@ -93,6 +93,110 @@ Deno.serve(async request => {
 
   const action = payload.action;
 
+  // 0. Create an account directly with a username and password.
+  if (action === "create-account") {
+    const username = typeof payload.username === "string" ? payload.username.trim().toLowerCase() : "";
+    const displayName = typeof payload.display_name === "string" ? payload.display_name.trim() : "";
+    const password = typeof payload.password === "string" ? payload.password : "";
+    const role = typeof payload.role === "string" ? payload.role : "";
+    const wingId = typeof payload.wing_id === "string" && payload.wing_id ? payload.wing_id : null;
+
+    if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(username)) {
+      return json({ error: "Use 3–30 lowercase letters, numbers, dots, underscores, or hyphens for the username." }, request, 400);
+    }
+    if (displayName.length < 1 || displayName.length > 80) {
+      return json({ error: "Enter a display name of 1–80 characters." }, request, 400);
+    }
+    if (password.length < 8 || password.length > 72) {
+      return json({ error: "Choose a password between 8 and 72 characters." }, request, 400);
+    }
+    if (!Object.hasOwn(roleLimits, role)) {
+      return json({ error: "Choose one of the assignable account roles." }, request, 400);
+    }
+    if ((role === "wing") !== Boolean(wingId)) {
+      return json({ error: "Choose a wing for wing accounts only." }, request, 400);
+    }
+    if (wingId) {
+      const { data: wing, error } = await adminClient.from("portal_wings").select("id").eq("id", wingId).maybeSingle();
+      if (error || !wing) return json({ error: "Choose an existing wing." }, request, 400);
+    }
+
+    const { data: existingUsername, error: usernameError } = await adminClient
+      .from("profiles")
+      .select("id")
+      .ilike("username", username)
+      .maybeSingle();
+    if (usernameError) {
+      console.error("Could not check the username.", usernameError.message);
+      return json({ error: "Could not verify the account roster." }, request, 500);
+    }
+    if (existingUsername) return json({ error: `The username "${username}" is already taken.` }, request, 409);
+
+    const { count, error: countError } = await adminClient
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", role)
+      .eq("is_active", true);
+    if (countError) {
+      console.error("Could not check role capacity.", countError.message);
+      return json({ error: "Could not verify available account slots." }, request, 500);
+    }
+    if ((count || 0) >= roleLimits[role]) {
+      return json({ error: `All ${roleLimits[role]} ${role} account slot(s) are in use.` }, request, 409);
+    }
+
+    const loginEmail = `${username}@adab.local`;
+    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+      email: loginEmail,
+      password,
+      email_confirm: true,
+      user_metadata: { display_name: displayName }
+    });
+    if (createError || !created.user) {
+      console.error("Could not create the auth user.", createError?.message);
+      return json({ error: createError?.message || "The account could not be created." }, request, 400);
+    }
+
+    const { error: profileInsertError } = await adminClient.from("profiles").insert({
+      id: created.user.id,
+      email: loginEmail,
+      username,
+      display_name: displayName,
+      role,
+      wing_id: wingId,
+      is_active: true
+    });
+    if (profileInsertError) {
+      console.error("Could not create the portal profile.", profileInsertError.message);
+      await adminClient.auth.admin.deleteUser(created.user.id).catch(() => {});
+      return json({ error: profileInsertError.message || "The portal profile could not be created." }, request, 400);
+    }
+
+    return json({
+      message: `Account "@${username}" created as ${role}. Share the username and password with the account holder.`,
+      username,
+      password,
+      role,
+      display_name: displayName
+    }, request, 201);
+  }
+
+  // 0b. Set a new password directly for an account.
+  if (action === "set-password") {
+    const userId = typeof payload.user_id === "string" ? payload.user_id : "";
+    const password = typeof payload.password === "string" ? payload.password : "";
+    if (!userId) return json({ error: "Choose an account first." }, request, 400);
+    if (password.length < 8 || password.length > 72) {
+      return json({ error: "Choose a password between 8 and 72 characters." }, request, 400);
+    }
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, { password });
+    if (updateError) {
+      console.error("Could not update the password.", updateError.message);
+      return json({ error: updateError.message || "The password could not be updated." }, request, 400);
+    }
+    return json({ message: "The account password has been updated." }, request);
+  }
+
   // 1. Create User Invitation & Generate Single-Use Token
   if (action === "invite") {
     const email = isEmail(payload.email) ? payload.email.trim().toLowerCase() : "";

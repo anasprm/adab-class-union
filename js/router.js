@@ -52,7 +52,7 @@ let reviewWorks = [];
 let reviewSuggestions = [];
 let financeLoading = false;
 let adminLoading = false;
-let adminActiveTab = "invites"; // 'invites', 'roster', 'content', 'wings'
+let adminActiveTab = "create"; // 'create', 'invites', 'roster', 'content', 'wings'
 let financeFilterType = "all"; // 'all', 'income', 'expense'
 let financeSearchQuery = "";
 let contentSearchQuery = "";
@@ -636,7 +636,7 @@ function renderLogin() {
         <h2 id="login-title">${heading}</h2>
         <p class="auth-description">${intro}</p>
         <form class="auth-form" id="login-form" data-auth-mode="${loginMode}">
-          ${!updatePassword ? `<div class="form-field"><label for="login-email">Email address</label><input id="login-email" name="email" type="email" autocomplete="email" placeholder="e.g. developer@adab.edu" maxlength="254" required></div>` : ""}
+          ${!updatePassword ? `<div class="form-field"><label for="login-email">Username or email</label><input id="login-email" name="email" type="text" autocomplete="username" placeholder="e.g. anasprm" maxlength="254" required></div>` : ""}
           ${!recovery ? `<div class="form-field"><label for="login-password">${updatePassword ? "New password" : "Password"}</label>
             <div class="password-input"><input id="login-password" name="password" type="password" autocomplete="${updatePassword ? "new-password" : "current-password"}" placeholder="${updatePassword ? "At least 8 characters" : "Enter password"}" minlength="${updatePassword ? "8" : "1"}" required><button class="password-toggle" type="button" data-action="toggle-password" aria-label="Show password" aria-pressed="false">Show</button></div>
           </div>` : ""}
@@ -662,7 +662,7 @@ function renderLogin() {
         </div>
 
         <div class="auth-secondary-actions">
-          ${recovery || updatePassword ? `<button class="auth-mode-link" type="button" data-auth-mode="signin">← Back to sign in</button>` : `<button class="auth-mode-link" type="button" data-auth-mode="recovery">Forgot password?</button><p class="auth-switch">Account access is invitation-only.</p>`}
+          ${recovery || updatePassword ? `<button class="auth-mode-link" type="button" data-auth-mode="signin">← Back to sign in</button>` : `<button class="auth-mode-link" type="button" data-auth-mode="recovery">Forgot password?</button><p class="auth-switch">Accounts are created by the Developer.</p>`}
         </div>
       </div>
     </section>
@@ -942,11 +942,70 @@ function renderAdmin() {
 
     <!-- Admin Navigation Tabs -->
     <div class="admin-tab-nav" role="tablist">
-      <button type="button" class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" data-admin-tab="invites">User Invitations (/admin/invite)</button>
+      <button type="button" class="admin-tab-btn ${adminActiveTab === "create" ? "is-active" : ""}" data-admin-tab="create">Create Account (Username & Password)</button>
+      <button type="button" class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" data-admin-tab="invites">Email Invitations (/admin/invite)</button>
       <button type="button" class="admin-tab-btn ${adminActiveTab === "roster" ? "is-active" : ""}" data-admin-tab="roster">Account Roster & Lifecycles</button>
       <button type="button" class="admin-tab-btn ${adminActiveTab === "content" ? "is-active" : ""}" data-admin-tab="content">Dynamic Copy & Content Editor</button>
       <button type="button" class="admin-tab-btn ${adminActiveTab === "wings" ? "is-active" : ""}" data-admin-tab="wings">Student Wings Editor (7 Wings)</button>
     </div>
+
+    <!-- TAB 0: Direct account creation with username and password -->
+    ${adminActiveTab === "create" ? `
+    <section class="section-block">
+      <div class="section-heading"><div><p class="eyebrow">Direct account provisioning</p><h2 class="section-title">Create an account with a username and password</h2></div></div>
+      <p class="form-note">Choose any username you like — no email address is needed. Share the username and password with the person. They sign in from the normal Sign in page using those exact details.</p>
+
+      <form class="contact-form" id="create-account-form">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="create-username">Username</label>
+            <input id="create-username" name="username" required minlength="3" maxlength="30" pattern="[a-z0-9][a-z0-9._\\-]{2,29}" placeholder="e.g. riyas" autocomplete="off">
+            <small class="form-note">3–30 characters: lowercase letters, numbers, dots, underscores, or hyphens.</small>
+          </div>
+          <div class="form-field"><label for="create-name">Display name</label><input id="create-name" name="display_name" required maxlength="80" placeholder="e.g. Muhammed Riyas"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="create-password">Initial password</label>
+            <input id="create-password" name="password" type="text" required minlength="8" maxlength="72" placeholder="At least 8 characters" autocomplete="new-password">
+          </div>
+          <div class="form-field">
+            <label for="create-role">Account role</label>
+            <select id="create-role" name="role" required>
+              <option value="student">Student</option>
+              <option value="teacher">Class Teacher</option>
+              <option value="committee">Core Committee</option>
+              <option value="treasurer">Treasurer</option>
+              <option value="wing">Wing Account</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field" id="create-wing-field" hidden>
+          <label for="create-wing">Assigned wing</label>
+          <select id="create-wing" name="wing_id">
+            ${portalWings.map(w => `<option value="${escapeHTML(w.id)}">${escapeHTML(w.name)}</option>`).join("")}
+          </select>
+        </div>
+        <button class="button" type="submit">Create account <span aria-hidden="true">→</span></button>
+      </form>
+
+      <div id="create-result-container" class="invite-result-container" hidden>
+        <div class="invite-result-card">
+          <span class="badge badge-success">Account created successfully</span>
+          <p id="create-result-message"></p>
+          <div class="invite-link-row">
+            <input type="text" id="create-result-credentials" readonly>
+            <button type="button" class="button" id="copy-credentials-btn">Copy</button>
+          </div>
+          <p class="form-note">The account is active immediately. The person can sign in at <strong>/#login</strong> with this username and password.</p>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-heading"><div><p class="eyebrow">Account slots</p><h2 class="section-title">Available roles</h2></div></div>
+        <div class="finance-summary">${Object.entries(roleCapacities).map(([r, limit]) => `<article class="capacity-card"><span>${escapeHTML(roleNames[r] || r)}</span><strong>${roleCounts[r]} / ${limit}</strong></article>`).join("")}</div>
+      </div>
+    </section>` : ""}
 
     <!-- TAB 1: User Invitations (/admin/invite) -->
     ${adminActiveTab === "invites" ? `
@@ -1039,13 +1098,14 @@ function renderAdmin() {
               <span class="badge ${member.is_active ? "badge-income" : "badge-expense"}">${member.is_active ? "Active" : "Suspended"}</span>
             </div>
             <h3>${escapeHTML(member.display_name)}</h3>
-            <p>${escapeHTML(member.email)}${member.roll_number ? ` · ${escapeHTML(member.roll_number)}` : ""}${member.wing_id ? ` · ${escapeHTML(portalWings.find(w => w.id === member.wing_id)?.name || member.wing_id)}` : ""}</p>
+            <p>${member.username ? `<strong>@${escapeHTML(member.username)}</strong> · ` : ""}${escapeHTML(member.email)}${member.roll_number ? ` · ${escapeHTML(member.roll_number)}` : ""}${member.wing_id ? ` · ${escapeHTML(portalWings.find(w => w.id === member.wing_id)?.name || member.wing_id)}` : ""}</p>
           </div>
           ${member.role === "developer" ? `<div class="developer-tag">Root Administrator</div>` : `
           <div class="account-lifecycle-actions">
-            <button type="button" class="button button-secondary" data-toggle-suspend="${escapeHTML(member.id)}">${member.is_active ? "Suspend User" : "Reactivate User"}</button>
+            <button type="button" class="button button-secondary" data-set-password="${escapeHTML(member.id)}" data-set-password-name="${escapeHTML(member.username || member.email)}">Set New Password</button>
+            <button type="button" class="button button-secondary" data-toggle-suspend="${escapeHTML(member.id)}" data-role="${escapeHTML(member.role)}" data-wing="${escapeHTML(member.wing_id || "")}" data-active="${member.is_active ? "true" : "false"}">${member.is_active ? "Suspend User" : "Reactivate User"}</button>
             <button type="button" class="button button-secondary" data-force-reset="${escapeHTML(member.email)}">Force Password Reset</button>
-            <button type="button" class="button button-danger" data-revoke-user="${escapeHTML(member.id)}">Revoke Access</button>
+            <button type="button" class="button button-danger" data-revoke-user="${escapeHTML(member.id)}" data-user-name="${escapeHTML(member.display_name)}">Revoke Access</button>
           </div>`}
         </article>`).join("")}
       </div>

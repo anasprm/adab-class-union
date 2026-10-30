@@ -3,6 +3,10 @@
 -- single-use invitation tokens, extended student profiles, and multi-format student works.
 
 -- 1. Ensure 7 dedicated Wings exist
+-- Remove the earlier legacy wing ids so the canonical seven can be inserted cleanly.
+delete from public.portal_wings
+where id not in ('arts', 'sports', 'literary', 'tech', 'social', 'media', 'ethics');
+
 insert into public.portal_wings (id, name, accent, objective, activities, icon)
 values
   ('arts', 'Arts & Cultural Wing', 'Creativity', 'Celebrate visual arts, calligraphy, performances, and creative exhibitions across the class community.', array['Visual art & calligraphy workshops', 'Creative exhibitions & gallery walks', 'Inter-house stage & artistic showcase'], '🎨'),

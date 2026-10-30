@@ -9,3 +9,6 @@ npm-debug.log*
 .artifacts/
 _old_qaaf_backup/
 
+
+.vercel
+.env*

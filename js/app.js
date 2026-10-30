@@ -197,7 +197,7 @@ async function loadAdminProfiles() {
   adminProfilesLoaded = true;
   setAdminProfiles([], true);
   const { data, error } = await supabase.from("profiles")
-    .select("id,email,display_name,role,wing_id,is_active,created_at")
+    .select("id,email,username,display_name,role,wing_id,is_active,created_at")
     .order("created_at", { ascending: true });
   if (error) {
     adminProfilesLoaded = false;
@@ -326,6 +326,89 @@ document.addEventListener("click", event => {
     });
   }
 
+  const copyButton = event.target instanceof Element ? event.target.closest("#copy-credentials-btn, #copy-invite-link-btn") : null;
+  if (copyButton) {
+    const input = copyButton.id === "copy-credentials-btn"
+      ? document.querySelector("#create-result-credentials")
+      : document.querySelector("#invite-link-input");
+    if (input instanceof HTMLInputElement && input.value) {
+      navigator.clipboard.writeText(input.value)
+        .then(() => showToast("Copied to clipboard."))
+        .catch(() => showToast("Could not copy automatically. Select the text and copy it.", "error"));
+    }
+  }
+
+  const copyToken = event.target instanceof Element ? event.target.closest("[data-copy-token]") : null;
+  if (copyToken) {
+    const link = `${location.origin}${location.pathname}#invite?token=${encodeURIComponent(copyToken.dataset.copyToken)}`;
+    navigator.clipboard.writeText(link)
+      .then(() => showToast("Invitation link copied."))
+      .catch(() => showToast("Could not copy the link.", "error"));
+  }
+
+  const setPassword = event.target instanceof Element ? event.target.closest("[data-set-password]") : null;
+  if (setPassword && currentProfile?.role === "developer") {
+    const nextPassword = window.prompt(`Enter a new password for ${setPassword.dataset.setPasswordName || "this account"} (at least 8 characters):`);
+    if (nextPassword === null) return;
+    if (nextPassword.length < 8) {
+      showToast("Use a password with at least 8 characters.", "error");
+      return;
+    }
+    supabase.functions.invoke("invite-user", {
+      body: { action: "set-password", user_id: setPassword.dataset.setPassword, password: nextPassword }
+    }).then(({ data, error }) => {
+      if (error) return showDatabaseError("Setting the new password", error);
+      showToast(data?.message || "Password updated.");
+    }).catch(error => showDatabaseError("Setting the new password", error));
+  }
+
+  const toggleSuspend = event.target instanceof Element ? event.target.closest("[data-toggle-suspend]") : null;
+  if (toggleSuspend && currentProfile?.role === "developer") {
+    const isActive = toggleSuspend.dataset.active !== "true";
+    supabase.functions.invoke("invite-user", {
+      body: {
+        action: "update-user",
+        user_id: toggleSuspend.dataset.toggleSuspend,
+        role: toggleSuspend.dataset.role,
+        wing_id: toggleSuspend.dataset.wing || null,
+        is_active: isActive
+      }
+    }).then(({ data, error }) => {
+      if (error) return showDatabaseError("Updating account access", error);
+      adminProfilesLoaded = false;
+      loadAdminProfiles();
+      showToast(data?.message || "Account access updated.");
+    }).catch(error => showDatabaseError("Updating account access", error));
+  }
+
+  const forceReset = event.target instanceof Element ? event.target.closest("[data-force-reset]") : null;
+  if (forceReset && currentProfile?.role === "developer") {
+    supabase.functions.invoke("invite-user", {
+      body: { action: "force-password-reset", email: forceReset.dataset.forceReset }
+    }).then(({ data, error }) => {
+      if (error) return showDatabaseError("Generating the password reset link", error);
+      if (data?.action_link) {
+        navigator.clipboard.writeText(data.action_link).catch(() => {});
+        window.prompt("Password reset link (copied to clipboard):", data.action_link);
+      } else {
+        showToast(data?.message || "Reset link generated.");
+      }
+    }).catch(error => showDatabaseError("Generating the password reset link", error));
+  }
+
+  const revokeUser = event.target instanceof Element ? event.target.closest("[data-revoke-user]") : null;
+  if (revokeUser && currentProfile?.role === "developer") {
+    if (!window.confirm(`Revoke access for ${revokeUser.dataset.userName || "this account"}? They will no longer be able to sign in.`)) return;
+    supabase.functions.invoke("invite-user", {
+      body: { action: "revoke-access", user_id: revokeUser.dataset.revokeUser }
+    }).then(({ data, error }) => {
+      if (error) return showDatabaseError("Revoking account access", error);
+      adminProfilesLoaded = false;
+      loadAdminProfiles();
+      showToast(data?.message || "Account access revoked.");
+    }).catch(error => showDatabaseError("Revoking account access", error));
+  }
+
   const link = event.target instanceof Element ? event.target.closest('a[href="#home#suggestions"]') : null;
   if (link) {
     event.preventDefault();
@@ -339,6 +422,14 @@ document.addEventListener("change", event => {
   if (event.target.matches("#invite-role")) {
     const wingField = document.querySelector("#invite-wing-field");
     if (wingField) wingField.hidden = event.target.value !== "wing";
+  }
+  if (event.target.matches("#create-role")) {
+    const wingField = document.querySelector("#create-wing-field");
+    if (wingField) {
+      wingField.hidden = event.target.value !== "wing";
+      const wingSelect = wingField.querySelector("select");
+      if (wingSelect) wingSelect.required = event.target.value === "wing";
+    }
   }
   const accountForm = event.target.closest(".account-access-form");
   if (accountForm && event.target.name === "role") {
@@ -361,7 +452,8 @@ document.addEventListener("submit", event => {
     }
     const formData = new FormData(event.target);
     const mode = event.target.dataset.authMode;
-    const email = String(formData.get("email") || "").trim().toLocaleLowerCase();
+    const identifier = String(formData.get("email") || "").trim().toLocaleLowerCase();
+    const email = identifier.includes("@") ? identifier : `${identifier}@adab.local`;
     const password = String(formData.get("password") || "");
 
     if (mode === "signin") {
@@ -433,6 +525,47 @@ document.addEventListener("submit", event => {
       loadPortalMembers();
       showToast("Your profile has been updated.");
     }).catch(error => showDatabaseError("Saving your profile", error));
+    return;
+  }
+  if (event.target.id === "create-account-form") {
+    event.preventDefault();
+    if (currentProfile?.role !== "developer" || !event.target.reportValidity()) return;
+    const form = event.target;
+    const formData = new FormData(form);
+    const role = String(formData.get("role"));
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+    supabase.functions.invoke("invite-user", {
+      body: {
+        action: "create-account",
+        username: String(formData.get("username")).trim().toLowerCase(),
+        display_name: String(formData.get("display_name")).trim(),
+        password: String(formData.get("password")),
+        role,
+        wing_id: role === "wing" ? String(formData.get("wing_id")) : null
+      }
+    }).then(({ data, error }) => {
+      if (submitButton) submitButton.disabled = false;
+      if (error) {
+        showDatabaseError("Creating the account", error);
+        return;
+      }
+      const container = document.querySelector("#create-result-container");
+      const message = document.querySelector("#create-result-message");
+      const credentials = document.querySelector("#create-result-credentials");
+      if (message) message.textContent = data?.message || "Account created.";
+      if (credentials) credentials.value = `Username: ${data?.username}    Password: ${data?.password}`;
+      if (container) container.hidden = false;
+      form.reset();
+      const wingField = document.querySelector("#create-wing-field");
+      if (wingField) wingField.hidden = true;
+      adminProfilesLoaded = false;
+      loadAdminProfiles();
+      showToast(data?.message || "Account created.");
+    }).catch(error => {
+      if (submitButton) submitButton.disabled = false;
+      showDatabaseError("Creating the account", error);
+    });
     return;
   }
   if (event.target.id === "invite-form") {
