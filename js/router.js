@@ -1506,46 +1506,56 @@ export function getActiveRoute() {
 }
 
 export function renderRoute(route = getActiveRoute()) {
-  const render = views[route] || views.home;
-  root.innerHTML = render();
-  root.dataset.route = route;
-  document.title = `${route === "home" ? "ADAB Class Union" : `${route.replaceAll("-", " ").replace(/\b\w/g, c => c.toUpperCase())} · ADAB`}`;
-
-  // Update navigation links
-  document.querySelectorAll("[data-route]").forEach(link => {
-    if (link.dataset.route === route) link.setAttribute("aria-current", "page");
-    else link.removeAttribute("aria-current");
-  });
-
-  const accountLink = document.querySelector(".account-nav-link");
-  if (accountLink) {
-    accountLink.textContent = currentUser ? "Account" : "Sign in";
-    accountLink.href = currentUser ? "#account" : "#login";
-    accountLink.dataset.route = currentUser ? "account" : "login";
+  if (!root) {
+    console.error("Critical: #view-root container not found in DOM.");
+    return;
   }
 
-  // Finance link in nav: STRICTLY HIDDEN to unauthenticated visitors
-  document.querySelectorAll(".member-nav-link").forEach(link => {
-    link.hidden = !currentProfile || !currentProfile.is_active;
-  });
+  try {
+    const render = views[route] || views.home;
+    root.innerHTML = render() || "";
+    root.dataset.route = route;
+    document.title = `${route === "home" ? "ADAB Class Union" : `${route.replaceAll("-", " ").replace(/\b\w/g, c => c.toUpperCase())} · ADAB`}`;
 
-  // Admin link in nav: Shown only to Developer
-  const adminLink = document.querySelector(".developer-nav-link");
-  if (adminLink) {
-    adminLink.hidden = currentProfile?.role !== "developer";
+    // Update navigation links
+    document.querySelectorAll("[data-route]").forEach(link => {
+      if (link.dataset.route === route) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
+
+    const accountLink = document.querySelector(".account-nav-link");
+    if (accountLink) {
+      accountLink.textContent = currentUser ? "Account" : "Sign in";
+      accountLink.href = currentUser ? "#account" : "#login";
+      accountLink.dataset.route = currentUser ? "account" : "login";
+    }
+
+    // Finance link in nav: STRICTLY HIDDEN to unauthenticated visitors
+    document.querySelectorAll(".member-nav-link").forEach(link => {
+      link.hidden = !currentProfile || !currentProfile.is_active;
+    });
+
+    // Admin link in nav: Shown only to Developer
+    const adminLink = document.querySelector(".developer-nav-link");
+    if (adminLink) {
+      adminLink.hidden = currentProfile?.role !== "developer";
+    }
+
+    // Update dynamic footer copy
+    const footerTagline = document.querySelector(".footer-brand p");
+    if (footerTagline) footerTagline.textContent = getContent("footer_tagline");
+    const footerLocation = document.querySelector(".footer-main div:nth-child(4) p");
+    if (footerLocation) footerLocation.innerHTML = escapeHTML(getContent("footer_location_body")).replaceAll("\n", "<br>");
+    const footerCopyright = document.querySelector("#footer-copyright-text");
+    if (footerCopyright) footerCopyright.textContent = getContent("footer_copyright");
+
+    window.scrollTo(0, 0);
+    root.focus({ preventScroll: true });
+    document.dispatchEvent(new CustomEvent("adab:route-rendered", { detail: { route } }));
+  } catch (error) {
+    console.error(`Error rendering route [${route}]:`, error);
+    root.innerHTML = `<div class="page-shell"><div class="empty-state"><strong>Unable to load section</strong><p>Please check your connection or refresh the page.</p><a class="button" href="#home">Return Home</a></div></div>`;
   }
-
-  // Update dynamic footer copy
-  const footerTagline = document.querySelector(".footer-brand p");
-  if (footerTagline) footerTagline.textContent = getContent("footer_tagline");
-  const footerLocation = document.querySelector(".footer-main div:nth-child(4) p");
-  if (footerLocation) footerLocation.innerHTML = escapeHTML(getContent("footer_location_body")).replaceAll("\n", "<br>");
-  const footerCopyright = document.querySelector("#footer-copyright-text");
-  if (footerCopyright) footerCopyright.textContent = getContent("footer_copyright");
-
-  window.scrollTo(0, 0);
-  root.focus({ preventScroll: true });
-  document.dispatchEvent(new CustomEvent("adab:route-rendered", { detail: { route } }));
 }
 
 export const routeData = { coreMembers, creativeWorks, events, students };
