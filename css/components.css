@@ -996,7 +996,7 @@
   background: var(--bg-card);
   color: var(--text-muted);
   cursor: pointer;
-  font-size: .88px;
+  font-size: .88rem;
   font-weight: 700;
   transition: all var(--transition);
 }
