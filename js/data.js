@@ -1,5 +1,19 @@
 import { assetPaths } from "./assets.js";
 
+export const roleNames = {
+  developer: "Developer",
+  teacher: "Class Teacher",
+  treasurer: "Treasurer",
+  student: "Student",
+  wing: "Wing Account"
+};
+
+export const rolesAllowedToReview = ["developer", "teacher", "committee"];
+export const canManageUnion = profile => rolesAllowedToReview.includes(profile?.role);
+export const canManageContent = profile => canManageUnion(profile) || profile?.role === "wing";
+export const isTreasurerOrDev = profile => ["developer", "treasurer"].includes(profile?.role);
+export const isVerifiedMember = profile => Boolean(profile && profile.is_active && roleNames[profile.role]);
+
 export const coreMembers = [
   { role: "President", name: "Muhammed Jameel.K", roll: "AD-01", initials: "MJ", bio: "Leads the class union with vision, guiding programmes and uniting students toward shared goals.", district: "Malappuram", handle: "@jameel.adab" },
   { role: "Secretary", name: "Muhammed Jasim.MJ", roll: "AD-02", initials: "MJ", bio: "Coordinates union operations, records decisions, and ensures clear communication across all activities.", district: "Kozhikode", handle: "@jasim.adab" },
@@ -318,6 +332,22 @@ export const initialBudgetAllocations = [
   { category: "Literary & Class Magazine", allocated: 12000, spent: 6500, description: "Printing of ADAB Journal Issue 01, debate trophies" },
   { category: "Tech & Digital Infrastructure", allocated: 8000, spent: 0, description: "Web hosting, workshop kits, domain registration" },
   { category: "Refreshments & Hospitality", allocated: 10000, spent: 3250, description: "Snacks and beverages for union meetings and assemblies" }
+];
+
+export const unionFundFixedAmount = 100;
+export const unionFundStudents = 15;
+
+// --- Teacher & Developer Financial Portal Data ---
+
+export const teacherAnnualDonationBase = 500; // ₹500/month per student at year start
+
+export const teacherDonations = [
+  // Each entry tracks a student's annual donation progress
+  // { studentId, studentName, roll, monthlyBase, totalPaidYTD, payments: [...] }
+];
+
+export const studentDebts = [
+  // Each entry: { id, studentId, studentName, roll, description, totalAmount, amountPaid, dueDate, status, createdAt }
 ];
 
 export const formatEventDate = date => new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(date));

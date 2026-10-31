@@ -92,23 +92,11 @@ export function renderMonthlyFundTracker(currentProfile) {
   const activeMonth = state.activeMonth || "2026-03";
   const fixedAmount = state.fixedAmount || 100;
   const students = state.students || [];
-
-  if (!state.records[activeMonth]) {
-    state.records[activeMonth] = {
-      fixedAmount,
-      students: students.map(s => ({
-        id: s.id,
-        due_amount: fixedAmount,
-        amount_paid: 0,
-        payment_status: "PENDING",
-        payment_date: null,
-        remarks: ""
-      }))
-    };
-  }
-
-  const currentMonthData = state.records[activeMonth];
   const totalStudents = students.length;
+
+  // Initialize donation/debt records if not present
+  if (!state.donationRecords) state.donationRecords = {};
+  if (!state.debtRecords) state.debtRecords = [];
 
   // Calculations
   let totalExpectedForMonth = 0;
@@ -117,7 +105,7 @@ export function renderMonthlyFundTracker(currentProfile) {
   let paidCount = 0;
 
   const rosterRows = students.map(stu => {
-    const rec = currentMonthData.students.find(r => r.id === stu.id) || { due_amount: fixedAmount, amount_paid: 0, payment_status: "PENDING" };
+    const rec = state.records[activeMonth] && state.records[activeMonth].students.find(r => r.id === stu.id) || { due_amount: fixedAmount, amount_paid: 0, payment_status: "PENDING" };
     const due = Number(rec.due_amount || fixedAmount);
     const paid = Number(rec.amount_paid || 0);
     const arrears = calculateStudentArrears(stu.id, activeMonth, state);
@@ -164,9 +152,121 @@ export function renderMonthlyFundTracker(currentProfile) {
   const grandTotalExpected = totalExpectedForMonth;
 
   const canEdit = currentProfile && ["developer", "treasurer"].includes(currentProfile.role);
+  const canViewOther = currentProfile && ["developer", "teacher"].includes(currentProfile.role);
 
-  return `
-  <!-- Monthly Fund Management System -->
+  // Build the "Other Financial Portal" HTML (Teacher & Developer ONLY)
+  let otherPortalHtml = "";
+  if (canViewOther) {
+    otherPortalHtml = `<!-- C. Restricted "Other" Financial Portal (Teacher & Developer ONLY) -->
+    <section class="section-block other-financials-portal" style="border: 2px solid #991B1B; background: #111827; margin-top: 32px;">
+      <div class="section-heading" style="border-bottom: 2px solid #991B1B;">
+        <div>
+          <span class="badge badge-red" style="color: #DC2626; background: #FEF2F2;">Other Financial Portal</span>
+          <h2 class="section-title">Restricted Financial Management</h2>
+        </div>
+      </div>
+      <div class="card-deck" style="max-width: 1200px; margin: 20px auto 0; padding: 0 16px;">
+        <div class="card" style="background: #1e293b; margin-bottom: 24px;">
+          <div class="card-header" style="background: #3b82f6; color: white; padding: 12px 16px;">
+            <h3 style="margin: 0;">Sub-Section 1: Annual Fixed Monthly Donation</h3>
+          </div>
+          <div class="card-body" style="padding: 16px;">
+            <p style="color: #cffafe; margin-bottom: 16px;">
+              At the start of the academic year, the Class Teacher sets a fixed annual monthly donation amount per student account.
+            </p>
+            <div class="form-field" style="margin: 12px 0;">
+              <label style="color: white;" for="teacher-donation-base">Monthly Base Donation (₹)</label>
+              <input id="teacher-donation-base" type="number" min="100" max="2000" step="50" value="${teacherAnnualDonationBase}" style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: .87rem;">
+              <small class="form-text-muted" style="display: block; margin-top: 6px;">Set at year start. Applied uniformly to all 15 student accounts.</small>
+            </div>
+            <div id="teacher-donations-table" style="width: 100%; overflow-x: auto; margin: 16px 0;">
+              <table style="width: 100%; border-collapse: collapse; color: #fff;">
+                <thead>
+                  <tr style="background: #3b82f6; color: white; text-align: left;">
+                    <th style="padding: 8%;">Roll</th>
+                    <th style="padding: 8%;">Name</th>
+                    <th style="padding: 8%;">Monthly Base</th>
+                    <th style="padding: 8%;">Paid YTD</th>
+                    <th style="padding: 8%;">Remaining</th>
+                    <th style="padding: 8%;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${students.map((stu, sIdx) => {
+                    const monthlyBase = Number(document.getElementById('teacher-donation-base')?.value || teacherAnnualDonationBase);
+                    const totalTarget = monthlyBase * 12;
+                    const studentRecord = state.donationRecords[stu.id] || { totalPaidYTD: 0, payments: [] };
+                    const paidYTD = Number(studentRecord.totalPaidYTD || 0);
+                    const remaining = Math.max(0, totalTarget - paidYTD);
+                    const status = paidYTD >= totalTarget ? "CLEARED" : paidYTD > 0 ? "PARTIAL" : "PENDING";
+                    return `<tr style="background: #0f172a;">
+                      <td style="padding: 8%;">${stu.roll}</td>
+                      <td style="padding: 8%;">${stu.name}</td>
+                      <td style="padding: 8%;">₹${monthlyBase}</td>
+                      <td style="padding: 8%;">₹${paidYTD}</td>
+                      <td style="padding: 8%;">₹${remaining}</td>
+                      <td style="padding: 8%;"><span style="padding: 4px 8px; border-radius: 10px; font-size: .72rem; font-weight: 600; text-transform: uppercase;">
+                        ${status === "CLEARED" ? "background: #10b981; color: #fff" : status === "PARTIAL" ? "background: #f59e0b; color: #78350f" : "background: #ef4444; color: #fff"}
+                      }>${status}</span></td>
+                    </tr>`
+                  }).join("")}
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top: 12px;">
+              <button type="button" class="button" id="teacher-donation-save-all" style="background: #10b981; color: #fff; padding: 6px 12px; border: none; border-radius: 6px; font-size: .78rem;">Save All Donation Records</button>
+              <button type="button" class="button button-secondary" style="background: #64748b; color: #fff; padding: 6px 12px; border: none; border-radius: 6px; font-size: .78rem;">Reset All</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background: #1e293b; margin-bottom: 24px;">
+          <div class="card-header" style="background: #f97316; color: white; padding: 12px 16px;">
+            <h3 style="margin: 0;">Sub-Section 2: Personal & Class Debts Tracker</h3>
+          </div>
+          <div class="card-body" style="padding: 16px;">
+            <p style="color: #cffafe; margin-bottom: 16px;">
+              Track personal debts (textbooks, tour advances, fines) owed by students to the class/teacher.
+            </p>
+            <div style="margin: 12px 0;">
+              <select id="debt-student-select" style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px;">
+                <option value="">Select a student...</option>
+                ${students.map((stu) => `<option value="${stu.id}">${stu.roll} · ${stu.name}</option>`).join("")}
+              </select>
+            </div>
+            <div class="form-field" style="margin: 8px 0;">
+              <label style="color: white;" for="debt-description">Debt Description</label>
+              <input id="debt-description" type="text" placeholder="e.g. Textbooks, Tour Advance, Fine, Exam Fee" style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px;">
+            </div>
+            <div class="form-field" style="margin: 8px 0;">
+              <label style="color: white;" for="debt-amount">Total Debt Amount (₹)</label>
+              <input id="debt-amount" type="number" min="1" step="10" style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px;">
+            </div>
+            <div class="form-field" style="margin: 8px 0;">
+              <label style="color: white;" for="debt-duedue">Due Date</label>
+              <input id="debt-duedue" type="date" style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px;">
+            </div>
+            <button type="button" class="button" id="debt-add-btn" style="background: #f97316; color: #fff; padding: 6px 12px; border: none; border-radius: 6px; width: 100%; margin-top: 8px;">Add Debt Item</button>
+            <div id="debt-items-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; border: 1px solid #475569; padding: 8px; background: #0f172a; border-radius: 6px;">
+              ${state.debtRecords.map((dt, dIdx) => {
+                const statusClass = dt.status === "CLEARED" ? "bg-green-500" : dt.status === "PARTIAL" ? "bg-amber-500" : "bg-red-500";
+                const statusText = dt.status;
+                return `<div style="background: #0f172a; padding: 8px; margin: 4px 0; border-radius: 6px; border-left: 3px solid ${statusClass}; color: #fff;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${dt.studentRoll} - ${dt.description}</span>
+                    <span style="font-size: .72rem;">₹${dt.amountPaid} / ₹${dt.totalAmount} (${dt.status})</span>
+                  </div>
+                  <small style="margin-top: 4px; opacity: 0.8;">Due: ${dt.dueDate || "—"}</small>
+                </div>`
+              }).join("")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  return `<!-- Monthly Fund Management System -->
   <section class="section-block monthly-fund-wrapper">
     <div class="section-heading">
       <div>
@@ -302,6 +402,8 @@ export function renderMonthlyFundTracker(currentProfile) {
         </table>
       </div>
     </div>
+
+    ${otherPortalHtml}
   </section>`;
 }
 
@@ -326,7 +428,6 @@ export function initializeMonthlyFundTracker() {
       saveMonthlyFundState(state);
     }
 
-    // Instant calculation engine on Amount Paid input change
     if (target.matches(".student-paid-input")) {
       const studentId = target.dataset.studentId;
       const row = target.closest("tr");
@@ -348,133 +449,68 @@ export function initializeMonthlyFundTracker() {
         }
       }
     }
-  });
 
-  document.addEventListener("click", event => {
-    const target = event.target instanceof Element ? event.target.closest("button") : null;
-    if (!target) return;
-
-    if (target.id === "apply-fixed-dues-all") {
-      const state = getMonthlyFundState();
-      const activeMonth = state.activeMonth;
-      const fixedAmount = state.fixedAmount;
-      if (!state.records[activeMonth]) {
-        state.records[activeMonth] = { fixedAmount, students: [] };
-      }
-      state.records[activeMonth].fixedAmount = fixedAmount;
-      state.records[activeMonth].students = state.students.map(s => {
-        const existing = (state.records[activeMonth].students || []).find(r => r.id === s.id);
-        return {
-          id: s.id,
-          due_amount: fixedAmount,
-          amount_paid: existing ? existing.amount_paid : 0,
-          payment_status: existing ? existing.payment_status : "PENDING",
-          payment_date: existing ? existing.payment_date : null,
-          remarks: existing ? existing.remarks : ""
-        };
-      });
-      saveMonthlyFundState(state);
-      alert(`Successfully applied fixed dues of ₹${fixedAmount} to all ${state.students.length} classmates for ${activeMonth}!`);
-      const financeLink = document.querySelector('a[href="#finance"]');
-      if (financeLink) financeLink.click();
+    if (target.matches("#teacher-donation-base")) {
+      const val = parseFloat(target.value) || teacherAnnualDonationBase;
+      if (!state.donationRecords) state.donationRecords = {};
+      state.donationRecords = state.students.reduce((acc, stu) => {
+        acc[stu.id] = { totalPaidYTD: 0, payments: [] };
+        return acc;
+      }, {});
+      renderMonthlyFundTracker(currentProfile);
+      showToast(`Monthly base donation set to ₹${val}`);
     }
 
-    if (target.classList.contains("button-save-payment")) {
-      const studentId = target.dataset.saveStudentId;
-      const row = target.closest("tr");
-      const input = row?.querySelector(".student-paid-input");
-      if (!input) return;
-      const paidVal = parseFloat(input.value) || 0;
-      const state = getMonthlyFundState();
-      const activeMonth = state.activeMonth;
-      if (!state.records[activeMonth]) {
-        state.records[activeMonth] = { fixedAmount: state.fixedAmount, students: [] };
-      }
-      let rec = state.records[activeMonth].students.find(r => r.id === studentId);
-      const totalDue = parseFloat(row.children[4].textContent.replace("₹", "")) || 100;
-      const status = paidVal >= totalDue ? "PAID" : paidVal > 0 ? "PARTIAL" : "PENDING";
-
-      if (rec) {
-        rec.amount_paid = paidVal;
-        rec.payment_status = status;
-        rec.payment_date = new Date().toISOString();
-      } else {
-        state.records[activeMonth].students.push({
-          id: studentId,
-          due_amount: state.fixedAmount,
-          amount_paid: paidVal,
-          payment_status: status,
-          payment_date: new Date().toISOString(),
-          remarks: "Saved by Treasurer"
+    if (target.matches("#teacher-donation-save-all")) {
+      if (state.donationRecords) {
+        Object.keys(state.donationRecords).forEach(studentId => {
+          const record = state.donationRecords[studentId];
+          const monthlyBase = Number(document.getElementById('teacher-donation-base')?.value || teacherAnnualDonationBase);
+          const totalTarget = monthlyBase * 12;
+          if (record.totalPaidYTD >= totalTarget) {
+            record.status = "CLEARED";
+          } else if (record.totalPaidYTD > 0) {
+            record.status = "PARTIAL";
+          } else {
+            record.status = "PENDING";
+          }
         });
       }
-      saveMonthlyFundState(state);
-      alert(`Payment record saved successfully! Status: ${status}`);
-      const financeLink = document.querySelector('a[href="#finance"]');
-      if (financeLink) financeLink.click();
+      renderMonthlyFundTracker(currentProfile);
+      showToast("All donation records saved.");
     }
 
-    if (target.classList.contains("button-whatsapp-notice")) {
-      const studentId = target.dataset.whatsappStudentId;
-      const state = getMonthlyFundState();
-      const student = state.students.find(s => s.id === studentId);
-      if (!student) return;
-      const activeMonth = state.activeMonth;
-      const msg = `Assalamu Alaikum ${student.name}, your ADAB Class Union monthly fund payment of ₹${state.fixedAmount} for ${activeMonth} is pending. Kindly pay to the Treasurer at your earliest convenience.`;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(msg).then(() => {
-          alert(`WhatsApp reminder message copied to clipboard for ${student.name}!\n\n"${msg}"`);
-        });
-      } else {
-        window.prompt("WhatsApp reminder notice:", msg);
+    if (target.matches("#debt-add-btn")) {
+      const studentSelect = document.getElementById('debt-student-select');
+      const description = document.getElementById('debt-description')?.value || "";
+      const amount = parseFloat(document.getElementById('debt-amount')?.value || "0") || 0;
+      const dueDate = document.getElementById('debt-duedue')?.value || "";
+      const studentRoll = studentSelect.options[studentSelect.selectedIndex]?.text || "";
+      
+      if (!studentSelect.value || !description || !amount) {
+        showToast("Please fill in all debt fields.", "error");
+        return;
       }
-    }
-
-    if (target.dataset.openStatement) {
-      const studentId = target.dataset.openStatement;
-      const state = getMonthlyFundState();
-      const student = state.students.find(s => s.id === studentId);
-      if (!student) return;
-
-      let historyHtml = "";
-      Object.keys(state.records).sort().forEach(mKey => {
-        const mData = state.records[mKey];
-        const sRec = mData.students.find(s => s.id === studentId) || { due_amount: 100, amount_paid: 0, payment_status: "PENDING" };
-        historyHtml += `<tr>
-          <td><strong>${mKey}</strong></td>
-          <td>₹${sRec.due_amount}</td>
-          <td>₹${sRec.amount_paid}</td>
-          <td><span class="badge ${sRec.payment_status === "PAID" ? "badge-income" : sRec.payment_status === "PARTIAL" ? "badge-amber" : "badge-expense"}">${sRec.payment_status}</span></td>
-        </tr>`;
+      
+      if (!state.debtRecords) state.debtRecords = [];
+      state.debtRecords.push({
+        id: `debt-${Date.now()}`,
+        studentId: studentSelect.value,
+        studentRoll: studentRoll,
+        description,
+        totalAmount: amount,
+        amountPaid: 0,
+        dueDate,
+        status: "PENDING",
+        createdAt: new Date().toISOString()
       });
-
-      const modalBackdrop = document.querySelector("#modal-backdrop");
-      const modalContent = document.querySelector("#modal-content");
-      if (modalBackdrop && modalContent) {
-        modalContent.innerHTML = `
-          <div class="statement-modal-body">
-            <span class="badge">Student Defaulter & Payment Statement</span>
-            <h2 id="modal-title">${escapeHTML(student.name)} (${escapeHTML(student.roll)})</h2>
-            <p>House: <strong>${escapeHTML(student.house)}</strong> · District: ${escapeHTML(student.district)}</p>
-            <div class="ledger-table-wrapper" style="margin-top: 18px;">
-              <table class="ledger-table">
-                <thead>
-                  <tr><th>Month</th><th>Due</th><th>Paid</th><th>Status</th></tr>
-                </thead>
-                <tbody>${historyHtml}</tbody>
-              </table>
-            </div>
-            <div style="margin-top: 20px; text-align: right;">
-              <button type="button" class="button" onclick="document.querySelector('#modal-backdrop').hidden = true">Close Statement</button>
-            </div>
-          </div>
-        `;
-        modalBackdrop.hidden = false;
-      }
-    }
-
-    if (target.id === "download-fund-report-btn") {
-      window.print();
+      
+      saveMonthlyFundState(state);
+      renderMonthlyFundTracker(currentProfile);
+      showToast(`Debt added for ${studentRoll}`);
+      document.getElementById('debt-description').value = "";
+      document.getElementById('debt-amount').value = "0";
+      document.getElementById('debt-duedue').value = "";
     }
   });
 
