@@ -501,7 +501,28 @@ document.addEventListener("click", event => {
     return;
   }
 
-  const link = event.target instanceof Element ? event.target.closest('a[href="#home#suggestions"]') : null;
+  const eventTab = event.target instanceof Element ? event.target.closest("[data-event-tab]") : null;
+  if (eventTab) {
+    const tabName = eventTab.dataset.eventTab;
+    const container = document.querySelector("#event-grid");
+    const tabsContainer = eventTab.closest(".event-tabs");
+    if (container && tabsContainer) {
+      tabsContainer.querySelectorAll(".event-tab-btn").forEach(btn => {
+        const isActive = btn === eventTab;
+        btn.classList.toggle("is-active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+      });
+      const allEvents = [...portalEvents, ...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const upcoming = allEvents.filter(e => e.status === "Upcoming");
+      const past = allEvents.filter(e => e.status === "Completed");
+      const list = tabName === "upcoming" ? upcoming : past;
+      container.innerHTML = list.map(eventCard).join("") || emptyState(
+        tabName === "upcoming" ? "No upcoming events" : "No past events",
+        tabName === "upcoming" ? "Check back soon for new scheduled activities." : "No archived events recorded yet."
+      );
+    }
+    return;
+  }
   if (link) {
     event.preventDefault();
     location.hash = "home";
