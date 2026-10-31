@@ -431,11 +431,103 @@ document.addEventListener("click", event => {
     renderRoute();
   }
 
+  // ==========================================
+  // PROGRAMS PAGE INTERACTIVE EVENT HANDLERS
+  // ==========================================
+  const simRoleBtn = event.target instanceof Element ? event.target.closest("[data-sim-role]") : null;
+  if (simRoleBtn) {
+    const role = simRoleBtn.dataset.simRole;
+    currentProfile = {
+      id: "sim-user-1",
+      display_name: role === "wing" ? "Wing Account Holder" : role === "committee" ? "Core Committee Member" : "Student Visitor",
+      role: role,
+      is_active: true
+    };
+    setCurrentProfile(currentProfile);
+    renderRoute();
+    showToast(`Simulated role switched to: ${role.toUpperCase()}`);
+    return;
+  }
+
+  const lightboxMedia = event.target instanceof Element ? event.target.closest("[data-lightbox-img]") : null;
+  if (lightboxMedia) {
+    const imgSrc = lightboxMedia.dataset.lightboxImg;
+    const imgTitle = lightboxMedia.dataset.lightboxTitle || "Program Poster";
+    const modalMarkup = `<div class="modal-poster-zoom"><img src="${escapeHTML(imgSrc)}" alt="${escapeHTML(imgTitle)}" style="max-width:100%; height:auto; border-radius:12px; margin-bottom:16px;"><h2>${escapeHTML(imgTitle)}</h2><p>ADAB Class Union Official Program Poster</p></div>`;
+    const backdropEl = document.querySelector("#modal-backdrop");
+    const contentEl = document.querySelector("#modal-content");
+    if (backdropEl && contentEl) {
+      contentEl.innerHTML = modalMarkup;
+      backdropEl.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+    return;
+  }
+
+  const likeBtn = event.target instanceof Element ? event.target.closest("[data-action='like-post']") : null;
+  if (likeBtn) {
+    const isLiked = likeBtn.classList.toggle("is-liked");
+    const countSpan = likeBtn.querySelector(".like-count");
+    if (countSpan) {
+      let currentLikes = parseInt(countSpan.textContent || "0", 10);
+      currentLikes = isLiked ? currentLikes + 1 : currentLikes - 1;
+      countSpan.textContent = String(currentLikes);
+    }
+    likeBtn.innerHTML = isLiked ? `♥ <span class="like-count">${countSpan?.textContent || "42"}</span>` : `♡ <span class="like-count">${countSpan?.textContent || "42"}</span>`;
+    showToast(isLiked ? "Liked post!" : "Unliked post.");
+    return;
+  }
+
+  const commentToggleBtn = event.target instanceof Element ? event.target.closest("[data-action='toggle-comments']") : null;
+  if (commentToggleBtn) {
+    const postCard = commentToggleBtn.closest(".ig-post-card");
+    const commentsSec = postCard?.querySelector(".ig-comments-section");
+    if (commentsSec) {
+      const isVisible = commentsSec.style.display !== "none";
+      commentsSec.style.display = isVisible ? "none" : "block";
+    }
+    return;
+  }
+
+  const commentForm = event.target instanceof Element ? event.target.closest("[data-post-comment]") : null;
+  // Handled via submit event below
+
+  const flipBtn = event.target instanceof Element ? event.target.closest("[data-action='flip-card']") : null;
+  if (flipBtn) {
+    const postCard = flipBtn.closest(".ig-post-card");
+    if (postCard) {
+      postCard.classList.toggle("is-flipped");
+    }
+    return;
+  }
+
   const link = event.target instanceof Element ? event.target.closest('a[href="#home#suggestions"]') : null;
   if (link) {
     event.preventDefault();
     location.hash = "home";
     window.setTimeout(() => document.querySelector("#suggestions")?.scrollIntoView({ behavior: "smooth" }), 0);
+  }
+});
+
+document.addEventListener("submit", event => {
+  if (!(event.target instanceof HTMLFormElement)) return;
+  const commentForm = event.target.closest("[data-post-comment]");
+  if (commentForm) {
+    event.preventDefault();
+    const input = commentForm.querySelector("input");
+    const text = input?.value.trim();
+    if (!text) return;
+    const commentsBox = commentForm.previousElementSibling;
+    if (commentsBox) {
+      const authorName = currentProfile?.display_name || "ADAB Student";
+      const commentEl = document.createElement("div");
+      commentEl.className = "ig-comment-item";
+      commentEl.innerHTML = `<strong>${escapeHTML(authorName)}</strong>${escapeHTML(text)}`;
+      commentsBox.append(commentEl);
+      input.value = "";
+      showToast("Comment posted successfully!");
+    }
+    return;
   }
 });
 
