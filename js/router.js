@@ -963,7 +963,7 @@ function renderAdmin() {
       <div class="admin-header-copy">
         <span class="admin-kicker"><span class="admin-kicker-dot" aria-hidden="true"></span> Developer control</span>
         <h1 class="page-title">Manage the union portal.</h1>
-        <p class="lead">Create accounts, manage access, customise every word, and keep the seven wings up to date — all from one place.</p>
+        <p class="lead">Create accounts, manage access, customise every word, and keep the eight wings up to date — all from one place.</p>
       </div>
       <div class="admin-identity">
         <span class="admin-identity-avatar" aria-hidden="true">A</span>
