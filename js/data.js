@@ -1,99 +1,59 @@
 import { assetPaths } from "./assets.js";
 
 export const coreMembers = [
-  { role: "Chairman", name: "Muhammed Riyas", roll: "AD-01", initials: "MR", bio: "Brings the class together with a steady voice, a welcoming spirit, and a belief that every student can contribute.", district: "Malappuram", handle: "@riyas.adab" },
-  { role: "Vice Chairman", name: "Fathima Shirin", roll: "AD-02", initials: "FS", bio: "Supports the union's day-to-day work and helps turn student ideas into inclusive programmes.", district: "Kozhikode", handle: "@shirin.adab" },
-  { role: "General Secretary", name: "Abdul Hadi", roll: "AD-03", initials: "AH", bio: "Coordinates meetings, records decisions, and keeps communication moving across the class.", district: "Kannur", handle: "@hadi.adab" },
-  { role: "Joint Secretary", name: "Nida Fathima", roll: "AD-04", initials: "NF", bio: "Works with the secretary to make sure plans are clear, organised, and open to everyone.", district: "Wayanad", handle: "@nida.adab" },
-  { role: "Treasurer", name: "Shamil Basheer", roll: "AD-05", initials: "SB", bio: "Keeps union resources carefully accounted for and helps each activity make the most of its budget.", district: "Malappuram", handle: "@shamil.adab" },
-  { role: "Arts Convenor", name: "Hiba Nasrin", roll: "AD-06", initials: "HN", bio: "Creates space for performance, writing, visual art, and the many ways students express themselves.", district: "Kozhikode", handle: "@hiba.adab" },
-  { role: "Sports Secretary", name: "Muneeb Rahman", roll: "AD-07", initials: "MR", bio: "Encourages participation, teamwork, and healthy competition across every house team.", district: "Palakkad", handle: "@muneeb.adab" },
-  { role: "Magazine Editor", name: "Amina Zoya", roll: "AD-08", initials: "AZ", bio: "Collects student voices and shapes them into a magazine that reflects the character of the class.", district: "Kasaragod", handle: "@amina.adab" }
+  { role: "President", name: "Muhammed Jameel.K", roll: "AD-01", initials: "MJ", bio: "Leads the class union with vision, guiding programmes and uniting students toward shared goals.", district: "Malappuram", handle: "@jameel.adab" },
+  { role: "Secretary", name: "Muhammed Jasim.MJ", roll: "AD-02", initials: "MJ", bio: "Coordinates union operations, records decisions, and ensures clear communication across all activities.", district: "Kozhikode", handle: "@jasim.adab" },
+  { role: "Treasurer", name: "Muhammed Anzil.E", roll: "AD-03", initials: "MA", bio: "Manages class union finances, budget allocations, and transparent financial records.", district: "Kannur", handle: "@anzil.adab" },
+  { role: "PRO", name: "Muhammed Adhil.KP", roll: "AD-04", initials: "MA", bio: "Handles public relations, announcements, and outreach for class union events and initiatives.", district: "Wayanad", handle: "@adhil.adab" }
 ];
 
 export const wings = [
   {
-    id: "arts",
-    name: "Arts & Cultural Wing",
-    icon: "🎨",
-    accent: "Creativity",
-    objective: "Celebrate visual arts, calligraphy, theatrical performances, and creative exhibitions across the class community.",
+    id: "ethics",
+    name: "Arabic Wing",
+    icon: "📜",
+    accent: "Arabic",
+    objective: "Celebrate the rich heritage of Arabic language and literature through melodious recitation, masterclass calligraphy workshops, and expressive spoken-word programmes.",
     activities: [
-      "Visual art & calligraphy workshops",
-      "Creative exhibitions & gallery walks",
-      "Inter-house stage & artistic showcase"
+      "Advanced Quranic recitation & Tajweed training circles",
+      "Traditional & modern Arabic calligraphy masterclasses",
+      "Inter-house Arabic elocution, poetry & debate symposiums"
     ]
   },
   {
-    id: "sports",
-    name: "Sports & Athletics Club",
-    icon: "⚽",
-    accent: "Teamwork",
-    objective: "Encourage fitness, teamwork, and healthy competition across every house team with inclusive sporting events.",
+    id: "arts",
+    name: "English Wing",
+    icon: "🎭",
+    accent: "English",
+    objective: "Cultivate eloquence, confidence, and linguistic mastery in English through engaging public speaking, creative essay writing, and dramatic stage performances.",
     activities: [
-      "Inter-house football & cricket leagues",
-      "Annual athletics meet & sprint cups",
-      "Morning fitness & wellness sessions"
+      "Dynamic public speaking & parliamentary debate contests",
+      "Creative writing, poetry, and flash fiction editorial circles",
+      "English theatrical productions & dramatic monologue showcases"
     ]
   },
   {
     id: "literary",
-    name: "Literary & Debating Society",
+    name: "Library Wing",
     icon: "📖",
-    accent: "Expression",
-    objective: "Cultivate thoughtful reading, articulate debate, creative writing, and publish the class journal.",
+    accent: "Library",
+    objective: "Foster a lifelong passion for reading by maintaining a vibrant class library, hosting intellectual book circles, and curating peaceful study sanctuaries.",
     activities: [
-      "Weekly book & reading circles",
-      "Parliamentary debating contests",
-      "Class magazine editorial desk"
-    ]
-  },
-  {
-    id: "tech",
-    name: "Tech & Coding Club",
-    icon: "💻",
-    accent: "Innovation",
-    objective: "Build digital literacy, develop software projects, and explore coding, AI, and modern web technologies.",
-    activities: [
-      "Web development bootcamps",
-      "Open-source project showcases",
-      "Algorithmic puzzle contests"
-    ]
-  },
-  {
-    id: "social",
-    name: "Social & Welfare Wing",
-    icon: "🤝",
-    accent: "Community",
-    objective: "Drive student solidarity, mutual peer tutoring, charity drives, and community outreach programs.",
-    activities: [
-      "Peer-to-peer study circles",
-      "Community outreach & charity drives",
-      "Student wellbeing & mentoring"
+      "Weekly peer book reviews & reflective reading circles",
+      "Comprehensive library cataloging, catalog curation & lending management",
+      "Literary quiz bowls & celebrated author spotlight exhibitions"
     ]
   },
   {
     id: "media",
-    name: "Media & IT Wing",
-    icon: "📷",
-    accent: "Communication",
-    objective: "Document union milestones, manage high-quality photography, and craft official announcements.",
+    name: "Malayalam Wing",
+    icon: "🌴",
+    accent: "Malayalam",
+    objective: "Honour our mother tongue through classical Malayalam poetry recitation, captivating storytelling evenings, and deep explorations of regional literature.",
     activities: [
-      "Milestone photography & videography",
-      "Poster & visual graphic design",
-      "Union digital archive management"
-    ]
-  },
-  {
-    id: "ethics",
-    name: "Ethics & Moral Values Wing",
-    icon: "⚖",
-    accent: "Integrity",
-    objective: "Promote ethical living, character development, reflective dialogue, and responsible leadership.",
-    activities: [
-      "Character building seminars",
-      "Ethics & leadership discussion circles",
-      "Values & integrity dialogues"
+      "Classical & contemporary Malayalam poetry recitation meets",
+      "Traditional storytelling & Kathaprasangam cultural evenings",
+      "Regional literary quiz tournaments & heritage essay sessions"
     ]
   },
   {
@@ -101,15 +61,50 @@ export const wings = [
     name: "PKV",
     icon: "🎯",
     accent: "PKV",
-    objective: "A dedicated wing for PKV programmes, peer collaboration, and class-wide participation.",
+    objective: "Drive specialized PKV student development initiatives, collaborative peer learning pods, and inclusive class-wide engagement across all union activities.",
     activities: [
-      "Weekly PKV sessions",
-      "Inter-house PKV competitions",
-      "Student-led PKV projects"
+      "Weekly structured PKV skill-building mentoring sessions",
+      "Inter-house PKV collaborative project competitions",
+      "Student-led community impact & leadership development workshops"
+    ]
+  },
+  {
+    id: "tech",
+    name: "Science Wing",
+    icon: "🔬",
+    accent: "Science",
+    objective: "Ignite scientific curiosity and empirical inquiry through hands-on laboratory experiments, interactive science exhibitions, and astronomy stargazing nights.",
+    activities: [
+      "Innovative science fair exhibition project prototypes",
+      "Live physics, chemistry & biology laboratory demonstrations",
+      "Astonomy stargazing nights & general science quiz challenges"
+    ]
+  },
+  {
+    id: "sports",
+    name: "Sports & Athletics Club",
+    icon: "⚽",
+    accent: "Teamwork",
+    objective: "Champion physical wellness, sportsmanship, and vigorous inter-house competition through well-organized athletic leagues and fitness programmes.",
+    activities: [
+      "Inter-house football, cricket & badminton championship leagues",
+      "Annual athletics meet, track events & sprint relay cups",
+      "Morning wellness conditioning & physical fitness sessions"
+    ]
+  },
+  {
+    id: "social",
+    name: "Urdu Wing",
+    icon: "✒️",
+    accent: "Urdu",
+    objective: "Promote the elegance of Urdu poetry, prose, and literary culture through mushairas, fine script calligraphy, and expressive linguistic dialogues.",
+    activities: [
+      "Graceful Urdu poetry (Mushaira) & ghazal recitation evenings",
+      "Traditional Urdu script calligraphy & handwriting workshops",
+      "Urdu elocution, debate & literary appreciation circles"
     ]
   }
 ];
-
 const districts = ["Malappuram", "Kozhikode", "Wayanad", "Kannur", "Palakkad", "Kasaragod", "Thrissur"];
 const houses = ["Red Knights", "White Warriors", "Crimson Falcons"];
 

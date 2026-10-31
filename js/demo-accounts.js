@@ -27,16 +27,16 @@ export const PRESEEDED_ACCOUNTS = [
     bio: "Class Advisor and Senior Secondary mentor overseeing student welfare and class union initiatives.",
     is_active: true
   },
-  // 1 Core Committee
+  // Core Committee / Secretary
   {
     id: "demo-sec-01",
     email: "committee@adab.edu",
-    display_name: "Abdul Hadi (General Secretary)",
+    display_name: "Muhammed Jasim.MJ (Secretary)",
     role: "committee",
     wing_id: null,
-    roll_number: "AD-03",
+    roll_number: "AD-02",
     house_team: "White Warriors",
-    district: "Kannur",
+    district: "Kozhikode",
     bio: "Core Committee Secretary coordinating union events, student assemblies, and council updates.",
     is_active: true
   },
@@ -44,12 +44,12 @@ export const PRESEEDED_ACCOUNTS = [
   {
     id: "demo-trs-01",
     email: "treasurer@adab.edu",
-    display_name: "Shamil Basheer (Treasurer)",
+    display_name: "Muhammed Anzil.E (Treasurer)",
     role: "treasurer",
     wing_id: null,
-    roll_number: "AD-05",
+    roll_number: "AD-03",
     house_team: "Crimson Falcons",
-    district: "Malappuram",
+    district: "Kannur",
     bio: "Class Union Treasurer maintaining transparent ledger entries, expense receipts, and budget allocations.",
     is_active: true
   },

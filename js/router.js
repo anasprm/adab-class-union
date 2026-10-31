@@ -268,7 +268,7 @@ function renderCore() {
     <header>
       <p class="eyebrow">Student leadership</p>
       <h1 class="page-title">Meet the core team.</h1>
-      <p class="lead">Eight classmates, one shared commitment: making the union a welcoming place to learn, contribute, and belong.</p>
+      <p class="lead">Four core leaders, one shared commitment: making the union a welcoming place to learn, contribute, and belong.</p>
     </header>
     <section class="section-block"><div class="card-grid">${coreMembers.map(profileCard).join("")}</div></section>
   </div>`;
@@ -633,6 +633,7 @@ function renderLogin() {
         <p class="auth-aside-note">LEARN TOGETHER · GROW TOGETHER</p>
       </aside>
       <div class="auth-content">
+        <img class="auth-lockup" src="${assetPaths.lockup}" alt="ADAB — Association for Development and Progress" width="150" height="150">
         <p class="eyebrow">Portal access</p>
         <h2 id="login-title">${heading}</h2>
         <p class="auth-description">${intro}</p>
@@ -1242,10 +1243,10 @@ function renderAdmin() {
       </div>
     </section>` : ""}
 
-    <!-- TAB 4: Student Wings Editor (7 Wings) -->
+    <!-- TAB 4: Student Wings Editor (8 Wings) -->
     ${adminActiveTab === "wings" ? `
     <section class="section-block">
-      <div class="section-heading"><div><p class="eyebrow">Portal-wide domain management</p><h2 class="section-title">Edit student wings (7 wings)</h2></div></div>
+      <div class="section-heading"><div><p class="eyebrow">Portal-wide domain management</p><h2 class="section-title">Edit student wings (8 wings)</h2></div></div>
       <p class="lead">Update wing titles, objectives, icons, and activities. Changes reflect instantly on the Wings page, announcement wing dropdowns, and member assignments.</p>
       <div class="wing-editor-grid">
         ${portalWings.map(wing => `
