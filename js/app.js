@@ -431,24 +431,6 @@ document.addEventListener("click", event => {
     renderRoute();
   }
 
-  // ==========================================
-  // PROGRAMS PAGE INTERACTIVE EVENT HANDLERS
-  // ==========================================
-  const simRoleBtn = event.target instanceof Element ? event.target.closest("[data-sim-role]") : null;
-  if (simRoleBtn) {
-    const role = simRoleBtn.dataset.simRole;
-    currentProfile = {
-      id: "sim-user-1",
-      display_name: role === "wing" ? "Wing Account Holder" : role === "committee" ? "Core Committee Member" : "Student Visitor",
-      role: role,
-      is_active: true
-    };
-    setCurrentProfile(currentProfile);
-    renderRoute();
-    showToast(`Simulated role switched to: ${role.toUpperCase()}`);
-    return;
-  }
-
   const lightboxMedia = event.target instanceof Element ? event.target.closest("[data-lightbox-img]") : null;
   if (lightboxMedia) {
     const imgSrc = lightboxMedia.dataset.lightboxImg;

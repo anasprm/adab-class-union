@@ -8,6 +8,30 @@ export const roleNames = {
   wing: "Wing Account"
 };
 
+// Profile picture and achievements state keys
+export const PROFILE_STORAGE_KEY = "adab_student_profiles";
+export const ACHIEVEMENTS_STORAGE_KEY = "adab_student_achievements";
+
+// --- Student Profile Data (LocalStorage persisted) ---
+// Each student gets a profile entry with avatar (base64) and achievements array
+export const studentProfiles = {
+  // { studentId: { avatarBase64, bio, tagline, achievements: [...] } }
+};
+
+// --- Achievement Records Structure ---
+// { id, studentId, studentRoll, studentName, title, category, awardLevel, date, description, imageUrl, createdAt }
+export const achievementRecords = [];
+
+// --- Pre-defined avatar options for quick selection ---
+export const avatarOptions = [
+  { id: "avatar-1", icon: "📚", label: "Student", color: "#DC2626" },
+  { id: "avatar-2", icon: "🏆", label: "Achiever", color: "#991B1B" },
+  { id: "avatar-3", icon: "🔬", label: "Science", color: "#3B82F6" },
+  { id: "avatar-4", icon: "⚽", label: "Sports", color: "#10B981" },
+  { id: "avatar-5", icon: "🎨", label: "Art", color: "#F59E0B" },
+  { id: "avatar-6", icon: "📝", label: "Literary", color: "#8B5CF6" }
+];
+
 export const rolesAllowedToReview = ["developer", "teacher", "committee"];
 export const canManageUnion = profile => rolesAllowedToReview.includes(profile?.role);
 export const canManageContent = profile => canManageUnion(profile) || profile?.role === "wing";
@@ -142,7 +166,14 @@ export const studentSeedData = [
 
 export const students = studentSeedData.map(student => ({
   ...student,
-  initials: student.name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase()
+  initials: student.name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
+  // Initialize profile with default avatar (first option) and empty achievements
+  profile: {
+    avatarBase64: "",
+    bio: student.bio || "",
+    tagline: "",
+    achievements: []
+  }
 }));
 
 export const events = [
@@ -351,3 +382,150 @@ export const studentDebts = [
 ];
 
 export const formatEventDate = date => new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(date));
+
+// --- Profile & Achievements Persistence ---
+
+// Load student profiles from LocalStorage, merging with seed data
+export function loadStudentProfiles() {
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!raw) {
+      // Initialize with seed data profiles (empty avatars, no achievements)
+      const initial = {};
+      students.forEach(s => {
+        initial[s.id] = { avatarBase64: "", bio: s.bio || "", tagline: "", achievements: [] };
+      });
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(initial));
+      return initial;
+    }
+    const parsed = JSON.parse(raw);
+    // Ensure all students have profile entries
+    students.forEach(s => {
+      if (!parsed[s.id]) {
+        parsed[s.id] = { avatarBase64: "", bio: s.bio || "", tagline: "", achievements: [] };
+      }
+    });
+    return parsed;
+  } catch (e) {
+    console.warn("Failed to load student profiles:", e);
+    return loadStudentProfiles(); // recursive retry
+  }
+}
+
+// Save student profiles to LocalStorage
+export function saveStudentProfiles(profiles) {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profiles));
+    return true;
+  } catch (e) {
+    console.warn("Failed to save student profiles:", e);
+    return false;
+  }
+}
+
+// Load achievement records from LocalStorage
+export function loadAchievementRecords() {
+  try {
+    const raw = localStorage.getItem(ACHIEVEMENTS_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(achievementRecords));
+      return achievementRecords;
+    }
+    const parsed = JSON.parse(raw);
+    // Ensure achievement IDs are unique
+    return parsed;
+  } catch (e) {
+    console.warn("Failed to load achievement records:", e);
+    return loadAchievementRecords();
+  }
+}
+
+// Save achievement records to LocalStorage
+export function saveAchievementRecords(records) {
+  try {
+    localStorage.setItem(ACHIEVEMENTS_STORAGE_KEY, JSON.stringify(records));
+    return true;
+  } catch (e) {
+    console.warn("Failed to save achievement records:", e);
+    return false;
+  }
+}
+
+// Add a new achievement for a student
+export function addStudentAchievement(studentId, achievement) {
+  const records = loadAchievementRecords();
+  const student = students.find(s => s.id === studentId);
+  if (!student) return false;
+
+  const newAchievement = {
+    id: `ach-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    studentId,
+    studentRoll: student.roll,
+    studentName: student.name,
+    title: achievement.title,
+    category: achievement.category,
+    awardLevel: achievement.awardLevel,
+    date: achievement.date,
+    description: achievement.description,
+    imageUrl: achievement.imageUrl || "",
+    createdAt: new Date().toISOString()
+  };
+
+  records.push(newAchievement);
+  saveAchievementRecords(records);
+
+  // Also update the student's profile achievements array
+  const profiles = loadStudentProfiles();
+  if (!profiles[studentId]) profiles[studentId] = { avatarBase64: "", bio: "", tagline: "", achievements: [] };
+  // Remove any existing achievement with same ID to prevent duplicates
+  profiles[studentId].achievements = profiles[studentId].achievements.filter(a => a.id !== newAchievement.id);
+  profiles[studentId].achievements.push(newAchievement);
+  saveStudentProfiles(profiles);
+
+  return newAchievement;
+}
+
+// Update a student's profile (avatar, bio, tagline)
+export function updateStudentProfile(studentId, profileData) {
+  const profiles = loadStudentProfiles();
+  if (!profiles[studentId]) profiles[studentId] = { avatarBase64: "", bio: "", tagline: "", achievements: [] };
+
+  // Merge existing with new data
+  profiles[studentId] = {
+    ...profiles[studentId],
+    avatarBase64: profileData.avatarBase64 || profiles[studentId].avatarBase64,
+    bio: profileData.bio || profiles[studentId].bio,
+    tagline: profileData.tagline || profiles[studentId].tagline,
+    achievements: profiles[studentId].achievements // keep existing achievements
+  };
+
+  saveStudentProfiles(profiles);
+  return profiles[studentId];
+}
+
+// Get a student's profile
+export function getStudentProfile(studentId) {
+  const profiles = loadStudentProfiles();
+  return profiles[studentId] || { avatarBase64: "", bio: "", tagline: "", achievements: [] };
+}
+
+// Get student's achievement count and badge info
+export function getStudentAchievementSummary(studentId) {
+  const profiles = loadStudentProfiles();
+  const achievements = profiles[studentId]?.achievements || [];
+  const count = achievements.length;
+
+  // Count by award level
+  const byLevel = { Campus: 0, District: 0, State: 0, College: 0 };
+  achievements.forEach(a => {
+    if (byLevel[a.awardLevel]) byLevel[a.awardLevel]++;
+  });
+
+  // Category counts
+  const byCategory = { Academic: 0, Cultural: 0, Sports: 0, "SAMIA Outreach": 0 };
+  achievements.forEach(a => {
+    if (byCategory[a.category]) byCategory[a.category]++;
+  });
+
+  return { count, byLevel, byCategory };
+}

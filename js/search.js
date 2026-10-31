@@ -1,4 +1,4 @@
-import { events, students } from "./data.js";
+import { students, studentProfiles, getStudentAchievementSummary, avatarOptions } from "./data.js";
 
 let directoryStudents = students;
 let portalEvents = [];
@@ -10,13 +10,22 @@ export function setDirectoryStudents(rows) {
   }
   directoryStudents = rows.map(row => {
     const name = row.display_name || "ADAB student";
+    const profile = studentProfiles[row.id] || { avatarBase64: "", bio: "", tagline: "", achievements: [] };
+    const summary = getStudentAchievementSummary(row.id);
     return {
       id: row.id,
       name,
       initials: name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
       roll: row.roll_number || row.id,
       house: row.house_team || "Student",
-      district: row.district || "District not added"
+      district: row.district || "",
+      avatarBase64: profile.avatarBase64,
+      avatarOption: profile.avatarBase64 ? null : avatarOptions[0],
+      achievementCount: summary.count,
+      achievementByLevel: summary.byLevel,
+      achievementByCategory: summary.byCategory,
+      bio: profile.bio,
+      tagline: profile.tagline
     };
   });
 }
@@ -54,7 +63,22 @@ export function initializeMemberSearch() {
     count.textContent = `Showing ${filtered.length} of ${directoryStudents.length} students`;
     clear.hidden = !search.value;
     grid.innerHTML = filtered.length ? filtered.map(student => `<article class="card profile-card" data-student-roll="${escapeHTML(student.roll)}" tabindex="0" role="button" aria-label="View ${escapeHTML(student.name)} profile">
-      <div class="card-body"><div class="profile-avatar" aria-hidden="true">${escapeHTML(student.initials)}</div><div><span class="badge">${escapeHTML(student.house)}</span><h3>${escapeHTML(student.name)}</h3><p>${escapeHTML(student.roll)} · ${escapeHTML(student.district)}</p></div></div>
+      <div class="card-body">
+        ${student.avatarBase64 
+          ? `<img class="profile-avatar-img" src="data:image/png;base64,${student.avatarBase64}" alt="${escapeHTML(student.name)}" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 3px solid #DC2626;">`
+          : `<div class="profile-avatar" style="width: 60px; height: 60px; border-radius: 12px; background: linear-gradient(145deg, #DC2626, #991B1B); display: grid; place-items: center; color: #fff; font-size: .82rem; font-weight: 800;">
+              ${student.avatarOption ? student.avatarOption.icon : student.initials}
+            </div>`}
+        <div style="margin-top: 8px; min-height: 60px;">
+          <span class="badge" style="font-size: .72rem; padding: 4px 8px; background: #F9FAFB; color: #111827;">${escapeHTML(student.house)}</span>
+          <h3 style="font-size: 1rem; margin: 6px 0 4px;">${escapeHTML(student.name)}</h3>
+          <p style="font-size: .72rem; color: #6B7280; margin: 0;">${escapeHTML(student.roll)} · ${escapeHTML(student.district)}</p>
+          ${student.tagline ? `<p style="font-size: .68rem; color: #DC2626; margin: 4px 0 0;">${escapeHTML(student.tagline)}</p>` : ""}
+        </div>
+        ${student.achievementCount > 0 ? `<div style="margin-top: 6px;">
+          <span class="text-xs font-medium" style="color: #DC2626;">🏆 ${student.achievementCount} Achievement${student.achievementCount !== 1 ? "s" : ""}</span>
+        </div>` : ""}
+      </div>
     </article>`).join("") : `<div class="empty-state"><strong>No classmates found</strong>Try another name, house team, or district.</div>`;
   }
 

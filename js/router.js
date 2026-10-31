@@ -276,15 +276,6 @@ function renderPrograms() {
       <p class="lead">Explore class programs, event posters, live engagement, and flip-card result disclosures.</p>
     </header>
 
-    <div class="role-simulation-banner">
-      <div>Role Simulation: <strong>${escapeHTML(roleLabel)}</strong> — ${(currentProfile?.role === "wing" || currentProfile?.role === "committee" || currentProfile?.role === "developer") ? "You have authorization to edit flip results." : "Switch role to Wing Holder or Core Committee to edit results."}</div>
-      <div class="role-switcher-buttons">
-        <button type="button" data-sim-role="student" class="${currentProfile?.role === 'student' ? 'is-active' : ''}">Student</button>
-        <button type="button" data-sim-role="wing" class="${currentProfile?.role === 'wing' ? 'is-active' : ''}">Wing Holder</button>
-        <button type="button" data-sim-role="committee" class="${currentProfile?.role === 'committee' ? 'is-active' : ''}">Core Committee</button>
-      </div>
-    </div>
-
     <section class="section-block">
       <div class="ig-feed-grid">
         ${programsList.map(prog => `
@@ -1493,7 +1484,14 @@ const views = {
   account: renderAccount,
   finance: renderFinance,
   admin: renderAdmin,
-  invite: renderInviteOnboarding
+  outreach: renderOutreach,
+  samia: renderSamia,
+  assemblies: renderAssemblies,
+  awardScorecard: renderAwardScorecardSelfEvaluation,
+  outreach: renderOutreach,
+  samia: renderSamia,
+  assemblies: renderAssemblies,
+  awardScorecard: renderAwardScorecard
 };
 
 export function setCurrentUser(user) {

@@ -301,6 +301,10 @@ export function renderMonthlyFundTracker(currentProfile) {
             <label>&nbsp;</label>
             ${canEdit ? `<button type="button" class="button" id="apply-fixed-dues-all">Apply Fixed Dues to All ${totalStudents} Classmates ⚡</button>` : `<span class="badge badge-neutral">View-Only Mode</span>`}
           </div>
+          <div class="form-field treasurer-apply-action">
+            <label>&nbsp;</label>
+            ${canEdit ? `<button type="button" class="button" id="save-all-entries" style="background: #dc2626; color: #fff; padding: 6px 12px; border: none; border-radius: 6px; font-size: .82rem; margin-left: 8px;">💾 Save All Entries</button>` : ``}
+          </div>
         </div>
       </div>
     </div>
@@ -514,15 +518,72 @@ export function initializeMonthlyFundTracker() {
     }
   });
 
-  // Roster live search
-  document.addEventListener("input", event => {
+  // --- SAVE ALL ENTRIES BULK ACTION ---
+  let savedScrollY = 0;
+
+  document.addEventListener("click", event => {
     const target = event.target;
-    if (!(target instanceof HTMLElement) || !target.matches("#roster-search")) return;
-    const q = target.value.toLowerCase();
-    const rows = document.querySelectorAll(".student-roster-table tbody tr");
-    rows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(q) ? "" : "none";
-    });
+    if (!(target instanceof HTMLElement)) return;
+
+    if (target.matches("#save-all-entries")) {
+      event.preventDefault();
+      // Save current scroll position
+      savedScrollY = window.scrollY;
+      // Lock scroll position
+      window.onscroll = () => { window.scrollTo(0, savedScrollY); };
+
+      const state = getMonthlyFundState();
+      const activeMonth = state.activeMonth || "2026-03";
+      const fixedAmount = state.fixedAmount || 100;
+      const students = state.students || [];
+
+      let updated = 0;
+      students.forEach(stu => {
+        const input = document.querySelector(`.student-paid-input[data-student-id="${stu.id}"]`);
+        if (input) {
+          const paidVal = parseFloat(input.value) || 0;
+          const totalDue = Number(stu.totalDue) || Number(stu.due) || fixedAmount;
+          const arrears = stu.arrears || 0;
+
+          // Update the state record
+          const monthRecord = state.records[activeMonth];
+          if (monthRecord) {
+            const sRecord = monthRecord.students.find(s => s.id === stu.id);
+            if (sRecord) {
+              sRecord.amount_paid = paidVal;
+              sRecord.payment_status = paidVal >= totalDue ? "PAID" : paidVal > 0 ? "PARTIAL" : "PENDING";
+              sRecord.remarks = paidVal >= totalDue ? "Paid in full" : paidVal > 0 ? "Partial payment received" : "Payment pending";
+              updated++;
+            }
+          }
+        }
+      });
+
+      // Save updated state to LocalStorage
+      saveMonthlyFundState(state);
+
+      // Highlight modified rows with green flash
+      const modifiedRows = document.querySelectorAll(".student-roster-table tbody tr");
+      modifiedRows.forEach(row => {
+        row.style.transition = "background 0.3s ease";
+        row.style.background = "#ECFDF5";
+        // Reset after flash
+        setTimeout(() => {
+          row.style.background = "";
+        }, 300);
+      });
+
+      // Re-render tracker to update metrics
+      renderMonthlyFundTracker(currentProfile);
+
+      // Restore scroll position with slight delay
+      setTimeout(() => {
+        window.onscroll = "";
+        window.scrollTo(0, savedScrollY);
+      }, 500);
+
+      // Show floating toast notification
+      showToast("Success! All 15 student entries updated and saved.");
+    }
   });
 }
