@@ -1,5 +1,5 @@
 /* ============================================================================
-   ADAB CLASS UNION — MODERNized MONTHLY FUND TRACKER & TREASURER MODULE STYLES
+   ADAB CLASS UNION — EXECUTIVE GLASSMORPHISM FINANCE TABLE OVERHAUL
    ============================================================================ */
 
 .monthly-fund-wrapper {
@@ -19,11 +19,6 @@
   background: linear-gradient(135deg, var(--bg-card) 0%, color-mix(in srgb, var(--red-light) 25%, var(--bg-card)) 100%);
   box-shadow: 0 10px 30px -10px rgb(153 27 27 / 8%);
   backdrop-filter: blur(8px);
-  transition: transform 200ms ease, box-shadow 200ms ease;
-}
-.treasurer-control-card:hover {
-  border-color: var(--red-border);
-  box-shadow: 0 14px 35px -8px rgb(153 27 27 / 12%);
 }
 
 .treasurer-control-grid {
@@ -44,14 +39,6 @@
   color: var(--text-main);
   font-weight: 600;
   font-size: .95rem;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.treasurer-select:focus,
-.treasurer-control-card input:focus {
-  border-color: var(--red-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red-primary) 18%, transparent);
-  outline: none;
 }
 
 .treasurer-apply-action { display: flex; flex-direction: column; justify-content: flex-end; }
@@ -60,13 +47,7 @@
   min-height: 50px;
   border-radius: 14px;
   font-weight: 750;
-  letter-spacing: -0.01em;
   box-shadow: 0 4px 14px rgb(220 38 38 / 25%);
-  transition: all 200ms ease;
-}
-.treasurer-apply-action .button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgb(220 38 38 / 35%);
 }
 
 .monthly-metrics-grid {
@@ -77,153 +58,220 @@
 }
 
 .monthly-metrics-grid .finance-stat-card {
-  position: relative;
-  overflow: hidden;
   padding: 24px;
   border: 1.5px solid var(--border-color);
   border-radius: 20px;
   background: var(--bg-card);
   box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
-  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
-}
-.monthly-metrics-grid .finance-stat-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--red-border);
-  box-shadow: 0 8px 25px -6px rgb(153 27 27 / 10%);
-}
-.monthly-metrics-grid .finance-stat-card span {
-  font-size: .8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--text-muted);
-}
-.monthly-metrics-grid .finance-stat-card strong {
-  display: block;
-  margin: 10px 0 4px;
-  font-size: 1.9rem;
-  letter-spacing: -.03em;
-}
-.monthly-metrics-grid .finance-stat-card .stat-subtitle {
-  color: var(--text-muted);
-  font-size: .82rem;
 }
 
-.completion-bar-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 2px;
+/* ============================================================================
+   1. EXECUTIVE GLASSMORPHISM TABLE CONTAINER & SURFACE
+   ============================================================================ */
+.student-roster-glass-card {
+  overflow-x: auto;
+  border-radius: 24px;
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  margin-top: 20px;
 }
-.completion-bar-wrapper strong { font-size: 1.6rem !important; margin: 6px 0 2px !important; }
 
-/* Modern Roster Table Styling */
 .student-roster-table {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  width: 100%;
+  color: #f3f4f6;
+  font-size: 0.92rem;
 }
-.student-roster-table th {
-  background: color-mix(in srgb, var(--bg-card) 85%, var(--border-color));
-  font-weight: 750;
-  letter-spacing: .03em;
+
+/* Header Aesthetics */
+.student-roster-table thead th {
+  background: rgba(153, 27, 27, 0.35);
+  backdrop-filter: blur(8px);
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 800;
   text-transform: uppercase;
-  font-size: .75rem;
-  color: var(--text-muted);
-  padding: 16px 14px;
-  border-bottom: 2px solid var(--border-color);
+  letter-spacing: 0.05em;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  white-space: nowrap;
 }
+
+/* ============================================================================
+   2. ROW & MICRO-INTERACTION ENHANCEMENTS
+   ============================================================================ */
+.student-roster-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+/* Alternating Row Shading */
+.student-roster-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Hover Transitions & Red Highlight */
+.student-roster-table tbody tr:hover {
+  background: rgba(220, 38, 38, 0.06);
+  border-left: 3px solid #dc2626;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 .student-roster-table td {
-  padding: 14px;
+  padding: 1rem 1.25rem;
   vertical-align: middle;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-card);
-  transition: background 150ms ease;
-}
-.student-roster-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--red-light) 18%, var(--bg-card));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.student-roster-identity { display: grid; gap: 3px; }
-.student-roster-identity strong { font-size: 1rem; letter-spacing: -.01em; color: var(--text-main); }
-.student-roster-identity small { color: var(--text-muted); font-size: .8rem; }
+/* Student Profile Avatar Ring */
+.student-roster-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.student-avatar-ring {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.student-roster-identity strong {
+  font-size: 0.98rem;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+.student-roster-identity small {
+  color: #9ca3af;
+  font-size: 0.78rem;
+}
 
+/* ============================================================================
+   3. INPUTS, BADGES & ACTION BUTTONS
+   ============================================================================ */
+.numeric-due { color: #d1d5db; font-weight: 600; }
+.numeric-total-due { color: #ffffff; font-weight: 800; font-size: 1.05rem; }
+
+/* Amount Paid Input Field */
 .amount-paid-input-wrapper {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 6px 12px;
-  border: 1.5px solid var(--border-color);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  background: var(--bg-main);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  background: rgba(11, 15, 25, 0.85);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 180ms ease;
 }
 .amount-paid-input-wrapper:focus-within {
-  border-color: var(--red-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red-primary) 15%, transparent);
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
-.amount-paid-input-wrapper span { font-weight: 750; color: var(--text-muted); font-size: .95rem; }
+.amount-paid-input-wrapper span { font-weight: 750; color: #9ca3af; font-size: .95rem; }
 .student-paid-input {
-  width: 80px;
+  width: 76px;
   border: none;
   background: transparent;
-  color: var(--text-main);
+  color: #ffffff;
   font-size: 1rem;
   font-weight: 750;
   text-align: right;
 }
 .student-paid-input:focus { outline: none; }
 
-/* Status Badges */
-.badge-income {
-  background: #d1fae5;
-  color: #065f46;
+/* Dynamic Status Pills */
+.badge-pill-paid {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
   padding: 5px 12px;
   border-radius: 999px;
   font-weight: 800;
   font-size: .75rem;
-  letter-spacing: .05em;
-}
-.badge-expense {
-  background: #fee2e2;
-  color: #991b1b;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: .75rem;
-  letter-spacing: .05em;
-}
-.badge-amber {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: .75rem;
-  letter-spacing: .05em;
+  letter-spacing: .06em;
+  display: inline-block;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
 }
 
-[data-theme="dark"] .badge-income { background: #064e3b; color: #a7f3d0; }
-[data-theme="dark"] .badge-expense { background: #7f1d1d; color: #fecaca; }
-[data-theme="dark"] .badge-amber { background: #78350f; color: #fde68a; }
+.badge-pill-pending {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .75rem;
+  letter-spacing: .06em;
+  display: inline-block;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
+}
 
+.badge-pill-partial {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .75rem;
+  letter-spacing: .06em;
+  display: inline-block;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+}
+
+/* Action Buttons */
 .roster-action-cell { display: flex; gap: 8px; align-items: center; }
-.button-save-payment {
+
+/* Solid Primary Red Save Button */
+.button-save-payment-modern {
   min-height: 38px;
-  padding: 0 16px;
+  padding: 0 18px;
   border-radius: 10px;
   font-size: .82rem;
   font-weight: 750;
-  border-color: var(--border-color);
-  background: var(--bg-main);
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #ef4444;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
   transition: all 180ms ease;
 }
-.button-save-payment:hover {
-  background: var(--red-primary);
-  border-color: var(--red-primary);
-  color: #fff;
+.button-save-payment-modern:hover {
+  background: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
 }
+.button-save-payment-modern:active {
+  transform: scale(0.95);
+}
+
+/* Clean Ghost / Text Link Statement Button */
+.btn-statement-ghost {
+  background: transparent;
+  border: none;
+  color: #93c5fd;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 150ms ease, text-decoration 150ms ease;
+}
+.btn-statement-ghost:hover {
+  color: #bfdbfe;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .button-whatsapp-notice {
   min-height: 38px;
   width: 38px;
@@ -233,7 +281,7 @@
   place-items: center;
   font-size: 1.05rem;
   border-color: #25d366;
-  background: color-mix(in srgb, #25d366 12%, var(--bg-card));
+  background: rgba(37, 211, 102, 0.15);
   color: #25d366;
   transition: all 180ms ease;
 }
@@ -253,7 +301,6 @@
   background: var(--bg-card);
   color: var(--text-main);
   font-size: .92rem;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 .roster-search-input:focus {
   border-color: var(--red-primary);

@@ -131,16 +131,19 @@ export function renderMonthlyFundTracker(currentProfile) {
     let badgeClass = "badge-neutral";
     let badgeText = "PENDING";
     if (paid >= totalDue || rec.payment_status === "PAID") {
-      badgeClass = "badge-income";
+      badgeClass = "badge-pill-paid";
       badgeText = "PAID";
       paidCount++;
     } else if (paid > 0 || rec.payment_status === "PARTIAL") {
-      badgeClass = "badge-amber";
+      badgeClass = "badge-pill-partial";
       badgeText = "PARTIAL";
     } else {
-      badgeClass = "badge-expense";
+      badgeClass = "badge-pill-pending";
       badgeText = "PENDING";
     }
+
+    const initials = stu.name.split(/\s+/).slice(0, 2).map(p => p[0]).join("").toUpperCase();
+    const houseColor = stu.house === "Red Knights" ? "#DC2626" : stu.house === "White Warriors" ? "#3B82F6" : "#8B5CF6";
 
     return {
       ...stu,
@@ -151,6 +154,8 @@ export function renderMonthlyFundTracker(currentProfile) {
       remaining,
       badgeClass,
       badgeText,
+      initials,
+      houseColor,
       remarks: rec.remarks || ""
     };
   });
@@ -241,7 +246,7 @@ export function renderMonthlyFundTracker(currentProfile) {
         </div>
       </div>
 
-      <div class="ledger-table-wrapper">
+      <div class="ledger-table-wrapper student-roster-glass-card">
         <table class="ledger-table student-roster-table">
           <thead>
             <tr>
@@ -261,14 +266,17 @@ export function renderMonthlyFundTracker(currentProfile) {
             <tr data-student-row-id="${escapeHTML(stu.id)}">
               <td>
                 <div class="student-roster-identity">
-                  <strong>${escapeHTML(stu.name)}</strong>
-                  <small>${escapeHTML(stu.roll)} · ${escapeHTML(stu.district)}</small>
+                  <div class="student-avatar-ring" style="border-color: ${stu.houseColor}; color: ${stu.houseColor}; background: color-mix(in srgb, ${stu.houseColor} 15%, transparent);">${escapeHTML(stu.initials)}</div>
+                  <div>
+                    <strong>${escapeHTML(stu.name)}</strong>
+                    <small>${escapeHTML(stu.roll)} · ${escapeHTML(stu.district)}</small>
+                  </div>
                 </div>
               </td>
               <td><span class="badge badge-neutral">${escapeHTML(stu.house)}</span></td>
-              <td><strong>₹${stu.due}</strong></td>
-              <td class="${stu.arrears > 0 ? "text-expense" : "text-muted"}"><strong>₹${stu.arrears}</strong></td>
-              <td><strong>₹${stu.totalDue}</strong></td>
+              <td><span class="numeric-due">₹${stu.due}</span></td>
+              <td class="${stu.arrears > 0 ? "text-expense font-bold" : "text-muted"}">₹${stu.arrears}</td>
+              <td><span class="numeric-total-due">₹${stu.totalDue}</span></td>
               <td>
                 <div class="amount-paid-input-wrapper">
                   <span>₹</span>
@@ -276,15 +284,15 @@ export function renderMonthlyFundTracker(currentProfile) {
                 </div>
               </td>
               <td>
-                <span class="badge ${stu.badgeClass}" data-status-badge="${escapeHTML(stu.id)}">${stu.badgeText}</span>
+                <span class="${stu.badgeClass}" data-status-badge="${escapeHTML(stu.id)}">${stu.badgeText}</span>
               </td>
               <td>
-                <button type="button" class="text-link" data-open-statement="${escapeHTML(stu.id)}">View Statement 📊</button>
+                <button type="button" class="btn-statement-ghost" data-open-statement="${escapeHTML(stu.id)}">View Statement</button>
               </td>
               <td>
                 <div class="roster-action-cell">
                   ${canEdit ? `
-                  <button type="button" class="button button-secondary button-save-payment" data-save-student-id="${escapeHTML(stu.id)}">Save</button>
+                  <button type="button" class="button button-save-payment-modern" data-save-student-id="${escapeHTML(stu.id)}">Save</button>
                   <button type="button" class="button button-secondary button-whatsapp-notice" data-whatsapp-student-id="${escapeHTML(stu.id)}" title="Send WhatsApp Payment Reminder">💬</button>
                   ` : `<span class="text-muted">—</span>`}
                 </div>
