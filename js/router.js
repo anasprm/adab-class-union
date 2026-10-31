@@ -1483,6 +1483,7 @@ function renderInviteOnboarding() {
 const views = {
   home: renderHome,
   about: renderAbout,
+  programs: renderPrograms,
   events: renderEvents,
   "core-members": renderCore,
   wings: renderWings,
