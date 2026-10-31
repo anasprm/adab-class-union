@@ -1,0 +1,104 @@
+/* ============================================================================
+   ADAB CLASS UNION — MONTHLY FUND TRACKER & TREASURER MODULE STYLES
+   ============================================================================ */
+
+.monthly-fund-wrapper { margin-top: 45px; }
+
+.treasurer-control-card {
+  margin-bottom: 25px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+.treasurer-control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.6fr;
+  gap: 20px;
+  align-items: center;
+}
+.treasurer-select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-weight: 600;
+}
+.treasurer-apply-action { display: flex; flex-direction: column; justify-content: flex-end; }
+.treasurer-apply-action .button { width: 100%; white-space: nowrap; }
+
+.monthly-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 35px;
+}
+.completion-bar-wrapper { display: flex; justify-content: space-between; align-items: baseline; }
+
+.student-roster-table td { vertical-align: middle; }
+.student-roster-identity { display: grid; gap: 2px; }
+.student-roster-identity strong { font-size: .95rem; }
+.student-roster-identity small { color: var(--text-muted); font-size: .78rem; }
+
+.amount-paid-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-main);
+}
+.amount-paid-input-wrapper span { font-weight: 700; color: var(--text-muted); }
+.student-paid-input {
+  width: 75px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: .95rem;
+  font-weight: 700;
+  text-align: right;
+}
+.student-paid-input:focus { outline: none; }
+
+.roster-action-cell { display: flex; gap: 6px; align-items: center; }
+.button-save-payment { min-height: 36px; padding: 0 12px; font-size: .8rem; }
+.button-whatsapp-notice {
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1rem;
+}
+
+.badge-income { background: #10b981; color: #065f46; }
+.badge-expense { background: #ef4444; color: #7f1d1d; }
+.badge-amber { background: #f59e0b; color: #78350f; }
+
+.roster-filter-row { display: flex; gap: 10px; align-items: center; }
+.roster-search-input {
+  min-height: 42px;
+  min-width: 240px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.statement-modal-body { padding: 10px; }
+.statement-modal-body h2 { margin: 8px 0 4px; font-size: 1.35rem; }
+.statement-modal-body p { margin: 0; color: var(--text-muted); font-size: .88rem; }
+
+@media (max-width: 1024px) {
+  .monthly-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .treasurer-control-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .monthly-metrics-grid { grid-template-columns: 1fr; }
+}

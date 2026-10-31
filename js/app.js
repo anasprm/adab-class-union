@@ -30,6 +30,7 @@ import {
   setPublishedWorks as setModalPublishedWorks
 } from "./modals.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
+import { initializeMonthlyFundTracker } from "./monthly-funds.js";
 
 const themeButton = document.querySelector(".theme-toggle");
 const menuButton = document.querySelector(".menu-toggle");
@@ -940,6 +941,7 @@ const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
 setTheme(storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme);
 document.querySelector("#current-year").textContent = String(new Date().getFullYear());
 initializeModals();
+initializeMonthlyFundTracker();
 if (supabase) {
   supabase.auth.onAuthStateChange((event, session) => {
     const user = session?.user || null;

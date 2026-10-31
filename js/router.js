@@ -18,6 +18,7 @@ import {
   resetContentToDefaults,
   savePortalContentKey
 } from "./content.js";
+import { renderMonthlyFundTracker } from "./monthly-funds.js";
 import {
   authenticateDemoUser,
   getDemoAccounts,
@@ -243,23 +244,184 @@ function renderAbout() {
   </div>`;
 }
 
+function renderPrograms() {
+  const allEvents = [...portalEvents, ...events];
+  const programsList = allEvents.map((item, idx) => ({
+    id: item.id || `prog-${idx}`,
+    title: item.title,
+    wing: item.category || "Union Wing",
+    author: item.venue || "Campus Auditorium",
+    date: item.time || "Recent Program",
+    image: item.image || assetPaths.event,
+    likes: 42 + (idx * 7) % 35,
+    comments: [
+      { user: "Fathima Shirin", text: "Amazing program! Everyone enjoyed it." },
+      { user: "Abdul Hadi", text: "Great coordination and participation." }
+    ],
+    caption: item.description || "A wonderful campus program organized by the ADAB Class Union students.",
+    hasResult: item.status === "Completed" || idx % 2 === 0,
+    result: {
+      position: idx % 3 === 0 ? "1st Place 🏆" : idx % 3 === 1 ? "2nd Place 🥈" : "Winner",
+      score: `${85 + (idx * 3) % 15} / 100`,
+      notes: "Successfully completed with stellar participation across all house teams."
+    }
+  }));
+
+  const roleLabel = currentProfile ? (roleNames[currentProfile.role] || currentProfile.role) : "Student Visitor";
+
+  return `<div class="page-shell">
+    <header>
+      <p class="eyebrow">Instagram-style campus feed</p>
+      <h1 class="page-title">Programs & Poster Feed</h1>
+      <p class="lead">Explore class programs, event posters, live engagement, and flip-card result disclosures.</p>
+    </header>
+
+    <div class="role-simulation-banner">
+      <div>Role Simulation: <strong>${escapeHTML(roleLabel)}</strong> — ${(currentProfile?.role === "wing" || currentProfile?.role === "committee" || currentProfile?.role === "developer") ? "You have authorization to edit flip results." : "Switch role to Wing Holder or Core Committee to edit results."}</div>
+      <div class="role-switcher-buttons">
+        <button type="button" data-sim-role="student" class="${currentProfile?.role === 'student' ? 'is-active' : ''}">Student</button>
+        <button type="button" data-sim-role="wing" class="${currentProfile?.role === 'wing' ? 'is-active' : ''}">Wing Holder</button>
+        <button type="button" data-sim-role="committee" class="${currentProfile?.role === 'committee' ? 'is-active' : ''}">Core Committee</button>
+      </div>
+    </div>
+
+    <section class="section-block">
+      <div class="ig-feed-grid">
+        ${programsList.map(prog => `
+        <article class="card ig-post-card" data-post-id="${escapeHTML(prog.id)}">
+          <div class="ig-card-inner">
+            <!-- FRONT OF CARD -->
+            <div class="ig-card-front">
+              <div class="ig-post-header">
+                <div class="ig-post-user">
+                  ${avatar(prog.wing.slice(0, 2).toUpperCase())}
+                  <div>
+                    <strong>${escapeHTML(prog.wing)}</strong>
+                    <small>${escapeHTML(prog.author)}</small>
+                  </div>
+                </div>
+                <span class="badge">${escapeHTML(prog.date)}</span>
+              </div>
+              <div class="ig-media-area" data-lightbox-img="${escapeHTML(prog.image)}" data-lightbox-title="${escapeHTML(prog.title)}">
+                <img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">
+                <span class="ig-zoom-hint">🔍 Tap to Zoom</span>
+              </div>
+              <div class="ig-post-actions">
+                <div class="ig-action-buttons">
+                  <button type="button" class="ig-action-button" data-action="like-post" aria-label="Like post">♡ <span class="like-count">${prog.likes}</span></button>
+                  <button type="button" class="ig-action-button" data-action="toggle-comments" aria-label="Toggle comments">💬 ${prog.comments.length}</button>
+                </div>
+                ${prog.hasResult ? `<button type="button" class="button button-secondary" data-action="flip-card" style="min-height: 36px; padding: 0 12px; font-size: .8rem;">View Results ↻</button>` : ""}
+              </div>
+              <div class="ig-post-body">
+                <p class="ig-post-caption"><strong>${escapeHTML(prog.title)}</strong> ${escapeHTML(prog.caption)}</p>
+                <div class="ig-comments-section" style="display: none;">
+                  <div class="ig-comments-box">
+                    ${prog.comments.map(c => `<div class="ig-comment-item"><strong>${escapeHTML(c.user)}</strong>${escapeHTML(c.text)}</div>`).join("")}
+                  </div>
+                  <form class="ig-comment-form" data-post-comment="${escapeHTML(prog.id)}">
+                    <input type="text" placeholder="Add a comment..." required maxlength="200">
+                    <button type="submit" class="button">Post</button>
+                  </form>
+                </div>
+                <div class="ig-post-meta">
+                  <small>ADAB Campus Feed</small>
+                  <small>Verified Union Program</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- BACK OF CARD (FLIP RESULT DISCLOSURE) -->
+            <div class="ig-card-back">
+              <div class="ig-result-header">
+                <h3 class="ig-result-title">Program Results & Scorecard</h3>
+                <button type="button" class="icon-button modal-close" data-action="flip-card" aria-label="Flip back">×</button>
+              </div>
+              <div class="ig-result-content">
+                <span class="ig-winner-badge">${escapeHTML(prog.result.position)}</span>
+                <div class="ig-score-display">${escapeHTML(prog.result.score)}</div>
+                <p class="ig-result-notes">${escapeHTML(prog.result.notes)}</p>
+              </div>
+              <div class="ig-result-footer" style="padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <small>Verified by Wing Account Holder</small>
+                <button type="button" class="text-link" data-action="flip-card">← Back to poster</button>
+              </div>
+            </div>
+          </div>
+        endarticle>`)}
+      </div>
+    </section>
+  </div>`;
+}
+
 function renderEvents() {
-  const sorted = [...portalEvents, ...events].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const allEvents = [...portalEvents, ...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const upcoming = allEvents.filter(e => e.status === "Upcoming");
+  const past = allEvents.filter(e => e.status === "Completed");
+
+  const canCreate = currentProfile && ["developer", "committee", "wing"].includes(currentProfile.role);
+
   return `<div class="page-shell">
     <header>
       <p class="eyebrow">${escapeHTML(getContent("events_eyebrow"))}</p>
       <h1 class="page-title">${escapeHTML(getContent("events_title"))}</h1>
       <p class="lead">${escapeHTML(getContent("events_lead"))}</p>
     </header>
-    <section class="section-block">
-      <div class="filter-bar event-filter-bar">
-        <div class="search-field"><label class="sr-only" for="event-search">Search events</label><input id="event-search" type="search" placeholder="Search events…" autocomplete="off"><button type="button" class="search-clear" aria-label="Clear event search" hidden>×</button></div>
-        <label class="sr-only" for="event-status-filter">Filter events by status</label><select id="event-status-filter"><option value="">All events</option><option value="Upcoming">Upcoming</option><option value="Completed">Past events</option></select>
-        <label class="sr-only" for="event-category-filter">Filter events by category</label><select id="event-category-filter"><option value="">All categories</option>${[...new Set(sorted.map(e => e.category))].sort().map(c => `<option>${escapeHTML(c)}</option>`).join("")}</select>
+
+    <div class="event-tabs" role="tablist">
+      <button type="button" class="event-tab-btn is-active" data-event-tab="upcoming" role="tab" aria-selected="true">Upcoming Events (${upcoming.length})</button>
+      <button type="button" class="event-tab-btn" data-event-tab="past" role="tab" aria-selected="false">Past Events Archive (${past.length})</button>
+    </div>
+
+    <section class="section-block" id="events-list-container">
+      <div class="card-grid" id="event-grid">
+        ${upcoming.map(eventCard).join("") || emptyState("No upcoming events", "Check back soon for new scheduled activities.")}
       </div>
-      <p class="result-count" id="event-result-count" aria-live="polite"></p>
-      <div class="card-grid" id="event-grid">${sorted.map(eventCard).join("")}</div>
     </section>
+
+    ${canCreate ? `
+    <section class="section-block event-create-box">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Committee & Wing Management</p>
+          <h2 class="section-title">Schedule a new event</h2>
+        </div>
+      </div>
+      <form class="contact-form" id="create-event-form">
+        <div class="form-row">
+          <div class="form-field"><label for="ev-title">Event Title</label><input id="ev-title" name="title" required maxlength="100" placeholder="e.g. Inter-House Debate Championship"></div>
+          <div class="form-field">
+            <label for="ev-category">Category</label>
+            <select id="ev-category" name="category" required>
+              <option value="Academic">Academic</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Sports">Sports</option>
+              <option value="Social">Social</option>
+              <option value="Flagship">Flagship</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="ev-status">Classification</label>
+            <select id="ev-status" name="status" required>
+              <option value="Upcoming">Upcoming Event</option>
+              <option value="Completed">Past Event / Archive</option>
+            </select>
+          </div>
+          <div class="form-field"><label for="ev-date">Date & Time</label><input id="ev-date" name="date" type="datetime-local" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label for="ev-venue">Venue</label><input id="ev-venue" name="venue" required maxlength="100" placeholder="e.g. Main Auditorium"></div>
+          <div class="form-field"><label for="ev-time">Time Label</label><input id="ev-time" name="time" required maxlength="50" placeholder="e.g. 10:00 AM – 1:00 PM"></div>
+        </div>
+        <div class="form-field"><label for="ev-desc">Description</label><textarea id="ev-desc" name="description" required maxlength="500" placeholder="Describe the event objectives and schedule..."></textarea></div>
+        <button class="button" type="submit">Publish Event to Schedule <span aria-hidden="true">→</span></button>
+      </form>
+    </section>` : `
+    <section class="section-block" style="text-align: center; padding: 24px; border: 1px dashed var(--border-color); border-radius: var(--radius);">
+      <p class="form-note">🔒 Event creation is restricted to Core Committee and Wing Account holders. Switch your role above to test creating events.</p>
+    </section>`}
   </div>`;
 }
 
@@ -459,6 +621,9 @@ function renderFinance() {
         }).join("")}
       </div>
     </section>
+
+    <!-- Monthly Fund Tracker & Student Dues Management -->
+    ${renderMonthlyFundTracker(currentProfile)}
 
     <!-- Treasurer Control View (Treasurer & Developer Only) -->
     ${canEdit ? `
