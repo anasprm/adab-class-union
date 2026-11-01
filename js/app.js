@@ -1108,6 +1108,8 @@ document.addEventListener("submit", event => {
       showToast("Enter the recipients for all three prizes.", "error");
       return;
     }
+    const publishButton = form.querySelector('button[type="submit"]');
+    if (publishButton?.disabled) return;
     const file = formData.get("media");
     const expectedMediaKind = String(formData.get("media_kind") || "");
     const publishPoster = async () => {
@@ -1165,7 +1167,12 @@ document.addEventListener("submit", event => {
       showToast("Program post and results published.");
       await loadProgramPosters();
     };
-    publishPoster().catch(error => showDatabaseError("Publishing the program post", error));
+    if (publishButton) publishButton.disabled = true;
+    publishPoster()
+      .catch(error => showDatabaseError("Publishing the program post", error))
+      .finally(() => {
+        if (publishButton?.isConnected) publishButton.disabled = false;
+      });
     return;
   }
   if (event.target.id === "portal-event-form") {

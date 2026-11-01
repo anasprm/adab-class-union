@@ -255,44 +255,24 @@ function renderAbout() {
 }
 
 function renderPrograms() {
-  const allEvents = [...portalEvents, ...events];
-  const programsList = [
-    ...allEvents.map((item, idx) => ({
-      id: item.id || `prog-${idx}`,
-      title: item.title,
-      wing: item.wing_name || item.category || "Union Program",
-      author: portalMembers?.find(member => member.id === item.created_by)?.name || null,
-      venue: item.venue || "Campus Auditorium",
-      date: item.time || "Recent Program",
-      image: item.image || assetPaths.event,
-      likes: 42 + (idx * 7) % 35,
-      comments: [],
-      caption: item.description || "A program organized by the ADAB Class Union.",
-      result: [
-        item.first_prize && { position: "1st Prize", recipient: item.first_prize },
-        item.second_prize && { position: "2nd Prize", recipient: item.second_prize },
-        item.third_prize && { position: "3rd Prize", recipient: item.third_prize }
-      ].filter(Boolean)
-    })),
-    ...programPosters.map(item => ({
-      id: item.id,
-      title: item.title,
-      wing: portalWings.find(wing => wing.id === item.wing_id)?.name || item.category || "Union Program",
-      author: portalMembers?.find(member => member.id === item.created_by)?.name || null,
-      venue: item.venue,
-      date: item.time_label,
-      image: item.poster_url || assetPaths.event,
-      video: item.video_url || null,
-      likes: 0,
-      comments: [],
-      caption: item.description,
-      result: [
-        item.first_prize && { position: "1st Prize", recipient: item.first_prize },
-        item.second_prize && { position: "2nd Prize", recipient: item.second_prize },
-        item.third_prize && { position: "3rd Prize", recipient: item.third_prize }
-      ].filter(Boolean)
-    }))
-  ].map(program => ({ ...program, hasResult: program.result.length > 0 }));
+  const programsList = programPosters.map(item => ({
+    id: item.id,
+    title: item.title,
+    wing: portalWings.find(wing => wing.id === item.wing_id)?.name || item.category || "Union Program",
+    author: portalMembers?.find(member => member.id === item.created_by)?.name || null,
+    venue: item.venue,
+    date: item.time_label,
+    image: item.poster_url,
+    video: item.video_url || null,
+    likes: 0,
+    comments: [],
+    caption: item.description,
+    result: [
+      item.first_prize && { position: "1st Prize", recipient: item.first_prize },
+      item.second_prize && { position: "2nd Prize", recipient: item.second_prize },
+      item.third_prize && { position: "3rd Prize", recipient: item.third_prize }
+    ].filter(Boolean)
+  })).map(program => ({ ...program, hasResult: program.result.length > 0 }));
   const posterPrograms = programsList.filter(program => !program.video);
   const videoPrograms = programsList.filter(program => program.video);
   const renderProgramCards = programs => programs.map(prog => `
@@ -302,7 +282,9 @@ function renderPrograms() {
               <div class="ig-media-area">
                 ${prog.video
                   ? `<video class="program-reel-video" src="${escapeHTML(prog.video)}" autoplay muted loop playsinline preload="metadata" aria-label="${escapeHTML(prog.title)} video"></video>`
-                  : `<img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">`}
+                  : prog.image
+                    ? `<img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">`
+                    : `<div class="program-media-placeholder" role="img" aria-label="Poster unavailable for ${escapeHTML(prog.title)}">Poster unavailable</div>`}
                 <div class="program-poster-overlay">
                   <span class="program-poster-category">${escapeHTML(prog.wing)}</span>
                   <strong>${escapeHTML(prog.title)}</strong>

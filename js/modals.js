@@ -95,7 +95,9 @@ function showProgram(program) {
     <div style="text-align: center; margin-bottom: 20px;">
       ${program.video
         ? `<video class="modal-program-video" src="${escapeHTML(program.video)}" controls playsinline preload="metadata" aria-label="${escapeHTML(program.title)} video"></video>`
-        : `<img class="modal-profile-avatar" src="${escapeHTML(program.image)}" alt="${escapeHTML(program.title)}" style="width: 200px; height: 200px; border-radius: 12px; object-fit: cover; border: 3px solid #DC2626; margin: 0 auto;">`}
+        : program.image
+          ? `<img class="modal-profile-avatar" src="${escapeHTML(program.image)}" alt="${escapeHTML(program.title)}" style="width: 200px; height: 200px; border-radius: 12px; object-fit: cover; border: 3px solid #DC2626; margin: 0 auto;">`
+          : `<p class="modal-media-placeholder">Poster preview unavailable</p>`}
       <h2 id="modal-profile-title" style="color: #111827; margin: 12px 0 4px;">${escapeHTML(program.title)}</h2>
       <p style="color: #6B7280; font-size: .88rem;">${escapeHTML(program.wing)}${publisher ? ` · By ${escapeHTML(publisher)}` : ""}</p>
       <p style="color: #6B7280; font-size: .82rem;">Venue: ${escapeHTML(program.venue || "Not specified")}</p>
@@ -149,7 +151,7 @@ export function setPortalEvents(rows) {
 export function setProgramPosters(rows) {
   programPosters = (rows || []).map(poster => ({
     ...poster,
-    image: poster.poster_url || assetPaths.event,
+    image: poster.poster_url || null,
     video: poster.video_url || null,
     wing: poster.wing_name || poster.category || "Union Program",
     author: poster.venue,
