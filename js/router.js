@@ -268,6 +268,7 @@ function renderPrograms() {
     date: item.time_label,
     image: item.poster_url,
     video: item.video_url || null,
+    isHighlight: item.is_highlight === true,
     likes: 0,
     comments: [],
     caption: item.description,
@@ -291,6 +292,7 @@ function renderPrograms() {
                     ? `<img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">`
                     : `<div class="program-media-placeholder" role="img" aria-label="Poster unavailable for ${escapeHTML(prog.title)}">Poster unavailable</div>`}
                 <div class="program-poster-overlay">
+                  ${prog.isHighlight ? `<span class="program-highlight-tag">Highlight</span>` : ""}
                   ${canDeletePosters && !prog.video ? `<button type="button" class="program-delete-button" data-action="delete-program-poster" data-program-id="${escapeHTML(prog.id)}" data-program-title="${escapeHTML(prog.title)}" aria-label="Delete poster: ${escapeHTML(prog.title)}">Delete poster</button>` : ""}
                   <span class="program-poster-category">${escapeHTML(prog.wing)}</span>
                   <strong>${escapeHTML(prog.title)}</strong>
@@ -387,6 +389,10 @@ function renderPrograms() {
           <div class="form-field"><label for="program-venue">Venue</label><input id="program-venue" name="venue" required maxlength="120"></div>
           ${wingField}
         </div>
+        <label class="program-highlight-option">
+          <input type="checkbox" name="is_highlight" value="true">
+          <span><strong>Highlight tag</strong><small>Show a Highlight label on this program in the archive.</small></span>
+        </label>
         <div class="form-field"><label for="program-description">Description</label><textarea id="program-description" name="description" required maxlength="1000"></textarea></div>
         <div class="form-field">
           <label id="program-media-label" for="program-media">Poster image</label>
@@ -573,9 +579,9 @@ function renderWorks() {
           <textarea id="work-content" name="content" required maxlength="5000" placeholder="Type or paste your work, essay, poem, or code here..."></textarea>
         </div>
         <div class="form-field">
-          <label for="work-image">Artwork image or PDF attachment (optional)</label>
-          <input id="work-image" name="attachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf">
-          <small class="form-note">PNG, JPG, WebP, or PDF up to 10 MB. Submissions remain private until published by reviewers.</small>
+          <label for="work-image">Publication preview image (optional)</label>
+          <input id="work-image" name="attachment" type="file" accept="image/jpeg,image/png,image/webp">
+          <small class="form-note">PNG, JPG, or WebP up to 10 MB. This image appears on your publication card after approval.</small>
         </div>
         <p class="form-note">Submitting as <strong>${escapeHTML(currentUser.email)}</strong>. Your work will be queued for union moderator review.</p>
         <div><button class="button" type="submit">Submit for review <span aria-hidden="true">→</span></button></div>
@@ -585,6 +591,30 @@ function renderWorks() {
         <a class="button" href="#${currentUser ? "account" : "login"}">${currentUser ? "Check account status →" : "Sign in to submit →"}</a>
       </div>`}
     </section>
+    ${currentProfile?.is_active && currentProfile.role === "developer" ? `
+    <section class="section-block" aria-labelledby="outreach-review-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">Developer only · private review</p><h2 class="section-title" id="outreach-review-title">Outreach programme requests</h2></div>
+        <p>Only the developer account can read requests and accept or decline them.</p>
+      </div>
+      ${outreachRequestsLoading
+        ? `<p class="form-note">Loading private outreach requests…</p>`
+        : outreachRequests.length ? `<div class="management-list">${outreachRequests.map(request => `
+          <article class="card management-card">
+            <div>
+              <span class="badge">Pending outreach request</span>
+              <h3>${escapeHTML(request.title)}</h3>
+              <p>Submitted by ${escapeHTML(request.submitter_name)} · ${escapeHTML(request.program_date)} · ${escapeHTML(request.venue)}</p>
+              <p>${escapeHTML(request.description)}</p>
+              ${request.evidence_path ? `<p><button class="text-link" type="button" data-outreach-file="${escapeHTML(request.evidence_path)}">View evidence</button></p>` : `<p class="form-note">No evidence file attached.</p>`}
+            </div>
+            <form class="review-outreach-request-form" data-outreach-review="${escapeHTML(request.id)}">
+              <button class="button" type="submit" name="status" value="accepted">Accept request</button>
+              <button class="button button-secondary" type="submit" name="status" value="rejected">Decline</button>
+            </form>
+          </article>`).join("")}</div>`
+        : `<p class="form-note">There are no outreach programme requests awaiting review.</p>`}
+    </section>` : ""}
   </div>`;
 }
 
@@ -1784,50 +1814,50 @@ const AWARD_CRITERIA = [
     id: "class-programmes",
     label: "Class Programmes",
     weight: 15,
-    hint: "Union-organised programmes: debates, quizzes, cultural evenings, and inter-house events.",
-    evidenceExamples: "Programme plans, posters, attendance records, minutes, and completion reports."
+    hint: "Programmes and activities conducted within the class will be evaluated under this category.",
+    evidenceExamples: "Keep records of class programmes and activities, their dates, and outcomes."
   },
   {
     id: "samia",
-    label: "SAMIA",
+    label: "Participation in SAMIA Programmes",
     weight: 10,
-    hint: "Participation and reporting under the SAMIA activity category.",
-    evidenceExamples: "Activity plans, participation records, reports, and dated supporting material."
+    hint: "Active participation and achievements in SAMIA programmes will be considered.",
+    evidenceExamples: "Record SAMIA programme participation and the class union's achievements."
   },
   {
     id: "highlight",
-    label: "Highlight",
+    label: "Highlight Programme",
     weight: 10,
-    hint: "The union's flagship highlight programme, from planning through execution.",
-    evidenceExamples: "The approved brief, schedule, assigned responsibilities, and completion report."
+    hint: "Programmes organized by the Class Union for the entire campus community will be evaluated under this category.",
+    evidenceExamples: "Record campus-wide programmes organized by the Class Union and their outcomes."
   },
   {
     id: "campus-pubs",
-    label: "Campus Publications",
+    label: "Publications Within Campus",
     weight: 20,
-    hint: "Editorial and creative publications circulated on campus: magazine, wall journal, newsletters.",
-    evidenceExamples: "Copies of each issue, publication dates, editorial records, and circulation details."
+    hint: "Campus-based publications such as magazines, articles, newsletters, podcasts and creative works by the class will be evaluated.",
+    evidenceExamples: "Keep copies or references for campus-based publications and their release dates."
   },
   {
     id: "outreach-pubs",
-    label: "Outreach Publications",
+    label: "Outreach Participation and Publications",
     weight: 25,
-    hint: "Outreach publications and external visibility — the heaviest single criterion.",
-    evidenceExamples: "Publication copies, release dates, intended audience, distribution channel, and reach."
+    hint: "Participation in outreach programs and individual publications of students in magazines, newspaper and blogs is evaluated in this category.",
+    evidenceExamples: "Record outreach participation and student publications in magazines, newspapers, and blogs."
   },
   {
     id: "bimonthly",
-    label: "Bonus Bimonthly Reports",
+    label: "Bonus",
     weight: 10,
-    hint: "Bimonthly reports filed on schedule, each accepted as bonus evidence.",
-    evidenceExamples: "Dated report copies and submission or receipt confirmations."
+    hint: "Authenticity and punctuality of bimonthly reports and active performance of class union in tasks assigned by SAMIA.",
+    evidenceExamples: "Keep authentic bimonthly reports, submission dates, and records of SAMIA-assigned class union tasks."
   },
   {
     id: "assembly",
     label: "Assembly",
     weight: 10,
-    hint: "General assemblies convened, minuted, and followed up on.",
-    evidenceExamples: "Agendas, attendance records, approved minutes, resolutions, and follow-up notes."
+    hint: "Based on frequency and quality of weekly assemblies conducted by class union.",
+    evidenceExamples: "Record the frequency and quality of weekly class union assemblies."
   }
 ];
 
@@ -2309,6 +2339,18 @@ export function setReviewData(works, suggestions) {
   reviewWorks = works || [];
   reviewSuggestions = suggestions || [];
   if (getActiveRoute() === "account") renderRoute();
+}
+
+export function setOutreachRequests(requests, loading = false) {
+  outreachRequests = requests || [];
+  outreachRequestsLoading = loading;
+  if (["account", "outreach", "works"].includes(getActiveRoute())) renderRoute();
+}
+
+export function setAcceptedOutreachPrograms(programs, loading = false) {
+  acceptedOutreachPrograms = programs || [];
+  acceptedOutreachProgramsLoading = loading;
+  if (getActiveRoute() === "outreach") renderRoute();
 }
 
 export function setLastCreatedAccount(account) {

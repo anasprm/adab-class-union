@@ -98,6 +98,7 @@ function showProgram(program) {
         : program.image
           ? `<img class="modal-profile-avatar" src="${escapeHTML(program.image)}" alt="${escapeHTML(program.title)}" style="width: 200px; height: 200px; border-radius: 12px; object-fit: cover; border: 3px solid #DC2626; margin: 0 auto;">`
           : `<p class="modal-media-placeholder">Poster preview unavailable</p>`}
+      ${program.is_highlight ? `<span class="program-highlight-tag program-highlight-modal">Highlight</span>` : ""}
       <h2 id="modal-profile-title" style="color: #111827; margin: 12px 0 4px;">${escapeHTML(program.title)}</h2>
       <p style="color: #6B7280; font-size: .88rem;">${escapeHTML(program.wing)}${publisher ? ` · By ${escapeHTML(publisher)}` : ""}</p>
       <p style="color: #6B7280; font-size: .82rem;">Venue: ${escapeHTML(program.venue || "Not specified")}</p>

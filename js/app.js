@@ -174,7 +174,7 @@ async function loadProgramPosters() {
   if (!supabase || programPostersLoaded) return;
   programPostersLoaded = true;
   const { data, error } = await supabase.from("program_posters")
-    .select("id,title,category,starts_at,time_label,venue,description,wing_id,poster_path,video_path,first_prize,second_prize,third_prize,created_by")
+    .select("id,title,category,starts_at,time_label,venue,description,wing_id,poster_path,video_path,is_highlight,first_prize,second_prize,third_prize,created_by")
     .eq("is_published", true)
     .order("starts_at", { ascending: false });
   if (error) {
@@ -858,12 +858,7 @@ document.addEventListener("change", event => {
   if (formatControl instanceof HTMLSelectElement) {
     const stageFields = document.querySelector("#award-stage-fields");
     const isStage = formatControl.value === "stage";
-    if (stageFields instanceof HTMLElement) {
-      stageFields.hidden = !isStage;
-      stageFields.querySelectorAll("input[name='clip'], input[name='duration']").forEach(input => {
-        input.required = isStage;
-      });
-    }
+    if (stageFields instanceof HTMLElement) stageFields.hidden = !isStage;
   }
   const reportStatus = event.target.closest("#award-report-status");
   if (reportStatus instanceof HTMLSelectElement) {
@@ -924,7 +919,7 @@ document.addEventListener("click", event => {
     return;
   }
   if (event.target.closest("[data-award-reset]")) {
-    if (!window.confirm("Clear programme, monthly report, publication, inspection, and bonus data saved in this browser? Your earlier rating draft, if present, will be kept.")) return;
+    if (!window.confirm("Clear all award planner records saved in this browser? Your earlier rating draft, if present, will be kept.")) return;
     if (!resetAwardPlanner()) {
       showToast("The planner could not be cleared because browser storage is unavailable.", "error");
       return;
@@ -1285,6 +1280,7 @@ document.addEventListener("submit", event => {
         first_prize: prizeValues[0],
         second_prize: prizeValues[1],
         third_prize: prizeValues[2],
+        is_highlight: formData.get("is_highlight") === "true",
         created_by: currentProfile.id
       });
       if (error) {
