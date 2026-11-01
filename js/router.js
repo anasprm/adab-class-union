@@ -1265,6 +1265,7 @@ function renderAdmin() {
           <strong>@${escapeHTML(currentProfile?.username || "developer")}</strong>
           <span>Root administrator</span>
         </div>
+        <button class="button button-secondary button-danger-subtle" type="button" data-action="sign-out" style="margin-inline-start: 16px;">Sign out</button>
       </div>
     </header>
 
