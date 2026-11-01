@@ -1,4 +1,4 @@
-import { students, studentProfiles, getStudentAchievementSummary, avatarOptions, achievementRecords, events, coreMembers, creativeWorks } from "./data.js";
+import { studentProfiles, getStudentAchievementSummary, avatarOptions, achievementRecords, events, creativeWorks } from "./data.js";
 import { assetPaths } from "./assets.js";
 
 const backdrop = document.querySelector("#modal-backdrop");
@@ -7,6 +7,7 @@ const closeButton = document.querySelector(".modal-close");
 let previouslyFocused;
 let publishedWorks = [];
 let portalEvents = [];
+let programPosters = [];
 let portalMembers = [];
 
 const escapeHTML = value => 
@@ -29,15 +30,16 @@ export function closeModal() {
 }
 
 function showEvent(event) {
-  openModal("<img class=\"modal-preview modal-event-preview\" src=\"" + escapeHTML(event.image) + "\" alt=\"" + escapeHTML(event.imageAlt) + "\"><p class=\"eyebrow\">" + escapeHTML(event.category) + " · " + escapeHTML(event.status) + "</p><h2 id=\"modal-title\">" + escapeHTML(event.title) + "</h2><p>" + escapeHTML(event.description) + "</p><div class=\"event-meta\"><span>◷ " + escapeHTML(event.time) + "</span><span>⌖ " + escapeHTML(event.venue) + "</span><span>▣ " + escapeHTML(new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(event.date))) + "</span></div>");
+  openModal("<img class=\"modal-preview modal-event-preview\" src=\"" + escapeHTML(event.image) + "\" alt=\"" + escapeHTML(event.imageAlt) + "\"><p class=\"eyebrow\">" + escapeHTML(event.category) + " · " + escapeHTML(event.status) + "</p><h2 id=\"modal-title\">" + escapeHTML(event.title) + "</h2><p>" + escapeHTML(event.description) + "</p><div class=\"event-meta\"><span>" + escapeHTML(event.time) + "</span><span>" + escapeHTML(event.venue) + "</span><span>" + escapeHTML(new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(event.date))) + "</span></div>");
 }
 
 function showWork(work) {
-  openModal("<img class=\"modal-preview modal-work-preview\" src=\"" + escapeHTML(work.image) + "\" alt=\"" + escapeHTML(work.imageAlt) + "\"><p class=\"eyebrow\">" + escapeHTML(work.type) + " · " + escapeHTML(work.date) + "</p><h2 id=\"modal-title\">" + escapeHTML(work.title) + "</h2><p><strong>By " + escapeHTML(work.author) + "</strong></p><p>" + escapeHTML(work.content).replace(/\n/g, "<br>") + "</p>");
+  const author = portalMembers.find(member => member.id === work.user_id)?.name || "Student contributor";
+  openModal("<img class=\"modal-preview modal-work-preview\" src=\"" + escapeHTML(work.image) + "\" alt=\"" + escapeHTML(work.imageAlt) + "\"><p class=\"eyebrow\">" + escapeHTML(work.type) + " · " + escapeHTML(work.date) + "</p><h2 id=\"modal-title\">" + escapeHTML(work.title) + "</h2><p><strong>By " + escapeHTML(author) + "</strong></p><p>" + escapeHTML(work.content).replace(/\n/g, "<br>") + "</p>");
 }
 
 function showMember(member) {
-  const profile = studentProfiles[member.id] || { avatarBase64: "", bio: "", tagline: "", achievements: [] };
+  const profile = studentProfiles[member.id] || { avatarBase64: "", bio: member.bio || "", tagline: "", achievements: [] };
   const summary = getStudentAchievementSummary(member.id);
 
   // Build achievement list HTML
@@ -65,20 +67,23 @@ function showMember(member) {
   // Avatar badges HTML
   let achievementBadges = "";
   if (summary.count > 0) {
-    achievementBadges = "<div style=\"margin-top: 12px;\"><strong style=\"color: #DC2626; font-size: .72rem;\">🏆 " + summary.count + " Achievement" + (summary.count !== 1 ? "s" : "") + "</strong></div>";
+    achievementBadges = "<div style=\"margin-top: 12px;\"><strong style=\"color: #DC2626; font-size: .72rem;\">" + summary.count + " Achievement" + (summary.count !== 1 ? "s" : "") + "</strong></div>";
   }
 
   openModal("<div class=\"modal-profile-container\">" + avatarHtml + "<div style=\"flex: 1; min-width: 0;\"><h2 id=\"modal-profile-title\" style=\"color: #111827; margin-bottom: 8px;\">" + escapeHTML(member.name) + "</h2><div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #E5E7EB;\"><span class=\"badge\" style=\"font-size: .72rem; padding: 4px 8px; background: #F9FAFB; color: #111827;\">" + escapeHTML(member.house) + "</span><span style=\"font-size: .68rem; color: #6B7280;\">" + escapeHTML(member.roll) + "</span></div><p style=\"color: #6B7280; font-size: .82rem; margin: 8px 0;\">" + escapeHTML(member.district) + "</p>" + (profile.tagline ? "<p style=\"color: #DC2626; font-size: .78rem; font-weight: 600; margin: 4px 0;\">" + escapeHTML(profile.tagline) + "</p>" : "") + "<p style=\"color: #6B7280; font-size: .82rem; line-height: 1.5;\">" + escapeHTML(profile.bio) + "</p>" + achievementBadges + achievementsHtml + "</div><div style=\"margin-top: 20px; text-align: right;\"><button type=\"button\" class=\"button\" onclick=\"document.querySelector('#modal-backdrop').hidden = true\">Close</button></div></div>");
 }
 
 function showProgram(program) {
-  const hasResult = program.hasResult || program.result !== undefined;
-  const resultHtml = hasResult ? `
+  const publisher = portalMembers.find(member => member.id === program.created_by)?.name;
+  const prizes = program.prizes || [
+    { position: "1st Prize", recipient: program.first_prize },
+    { position: "2nd Prize", recipient: program.second_prize },
+    { position: "3rd Prize", recipient: program.third_prize }
+  ].filter(prize => prize.recipient);
+  const resultHtml = prizes.length ? `
     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #E5E7EB;">
       <strong style="color: #DC2626; font-size: .8rem;">Results</strong>
-      <p style="color: #111827; margin: 4px 0;">${program.result ? program.result.position : "Position pending"}</p>
-      <p style="color: #6B7280; font-size: .72rem;">Score: ${program.score || "—"} / 100</p>
-      <p style="color: #6B7280; font-size: .72rem;">${program.notes || "—"}</p>
+      ${prizes.map(prize => `<p style="color: #111827; margin: 4px 0;"><strong>${escapeHTML(prize.position)}:</strong> ${escapeHTML(prize.recipient)}</p>`).join("")}
     </div>` : "";
 
   const commentsHtml = program.comments && program.comments.length > 0 ? `
@@ -88,9 +93,12 @@ function showProgram(program) {
 
   openModal(`<div class="modal-profile-container" style="max-width: 600px;">
     <div style="text-align: center; margin-bottom: 20px;">
-      <img class="modal-profile-avatar" src="${program.image}" alt="${escapeHTML(program.title)}" style="width: 200px; height: 200px; border-radius: 12px; object-fit: cover; border: 3px solid #DC2626; margin: 0 auto;">
+      ${program.video
+        ? `<video class="modal-program-video" src="${escapeHTML(program.video)}" controls playsinline preload="metadata" aria-label="${escapeHTML(program.title)} video"></video>`
+        : `<img class="modal-profile-avatar" src="${escapeHTML(program.image)}" alt="${escapeHTML(program.title)}" style="width: 200px; height: 200px; border-radius: 12px; object-fit: cover; border: 3px solid #DC2626; margin: 0 auto;">`}
       <h2 id="modal-profile-title" style="color: #111827; margin: 12px 0 4px;">${escapeHTML(program.title)}</h2>
-      <p style="color: #6B7280; font-size: .88rem;">${program.wing} · ${escapeHTML(program.author)}</p>
+      <p style="color: #6B7280; font-size: .88rem;">${escapeHTML(program.wing)}${publisher ? ` · By ${escapeHTML(publisher)}` : ""}</p>
+      <p style="color: #6B7280; font-size: .82rem;">Venue: ${escapeHTML(program.venue || "Not specified")}</p>
     </div>
     <div style="color: #6B7280; font-size: .88rem; line-height: 1.5;">
       <p>${escapeHTML(program.caption)}</p>
@@ -115,6 +123,7 @@ export function setPublishedWorks(rows) {
   };
   publishedWorks = rows.map(row => ({
     id: row.id,
+    user_id: row.user_id,
     title: row.title,
     author: row.author_name,
     type: row.work_type,
@@ -134,6 +143,23 @@ export function setPortalEvents(rows) {
     time: event.time_label,
     image: assetPaths.event,
     imageAlt: "Illustrated ADAB event artwork"
+  }));
+}
+
+export function setProgramPosters(rows) {
+  programPosters = (rows || []).map(poster => ({
+    ...poster,
+    image: poster.poster_url || assetPaths.event,
+    video: poster.video_url || null,
+    wing: poster.wing_name || poster.category || "Union Program",
+    author: poster.venue,
+    caption: poster.description,
+    comments: [],
+    prizes: [
+      poster.first_prize && { position: "1st Prize", recipient: poster.first_prize },
+      poster.second_prize && { position: "2nd Prize", recipient: poster.second_prize },
+      poster.third_prize && { position: "3rd Prize", recipient: poster.third_prize }
+    ].filter(Boolean)
   }));
 }
 
@@ -172,7 +198,7 @@ export function initializeModals() {
       if (work) showWork(work);
     }
     if (target.dataset.postId) {
-      const program = portalEvents.find(item => item.id === target.dataset.postId);
+      const program = programPosters.find(item => item.id === target.dataset.postId);
       if (!program) {
         const allEvents = [...portalEvents, ...events];
         const prog = allEvents.find(item => item.id === target.dataset.postId);
@@ -182,11 +208,11 @@ export function initializeModals() {
       }
     }
     if (target.dataset.memberRoll) {
-      const member = coreMembers.find(item => item.roll === target.dataset.memberRoll);
+      const member = portalMembers.find(item => item.roll === target.dataset.memberRoll);
       if (member) showMember(member);
     }
     if (target.dataset.studentRoll) {
-      const member = [...portalMembers, ...students].find(item => item.roll === target.dataset.studentRoll);
+      const member = portalMembers.find(item => item.roll === target.dataset.studentRoll);
       if (member) showMember(member);
     }
   });

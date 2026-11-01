@@ -1,14 +1,14 @@
-import { students, studentProfiles, getStudentAchievementSummary, avatarOptions, events } from "./data.js";
+import { studentProfiles, getStudentAchievementSummary, avatarOptions, events } from "./data.js";
 
-let directoryStudents = students;
+let directoryStudents = [];
 let portalEvents = [];
 
 export function setDirectoryStudents(rows) {
   if (!rows) {
-    directoryStudents = students;
+    directoryStudents = [];
     return;
   }
-  directoryStudents = rows.map(row => {
+  directoryStudents = rows.filter(row => row.role === "student").map(row => {
     const name = row.display_name || "ADAB student";
     const profile = studentProfiles[row.id] || { avatarBase64: "", bio: "", tagline: "", achievements: [] };
     const summary = getStudentAchievementSummary(row.id);
@@ -24,7 +24,7 @@ export function setDirectoryStudents(rows) {
       achievementCount: summary.count,
       achievementByLevel: summary.byLevel,
       achievementByCategory: summary.byCategory,
-      bio: profile.bio,
+      bio: row.bio || "",
       tagline: profile.tagline
     };
   });
@@ -121,7 +121,7 @@ export function initializeEventSearch() {
         <div class="card-body">
           <div class="card-topline"><div class="event-date"><strong>${new Intl.DateTimeFormat("en", { day: "2-digit" }).format(date)}</strong><span>${new Intl.DateTimeFormat("en", { month: "short" }).format(date)}</span></div><span class="badge ${upcoming ? "" : "badge-neutral"}">${escapeHTML(item.status)}</span></div>
           <h3>${escapeHTML(item.title)}</h3><p>${escapeHTML(item.description)}</p>
-          <div class="event-meta"><span>◷ ${escapeHTML(item.time)}</span><span>⌖ ${escapeHTML(item.venue)}</span></div>
+          <div class="event-meta"><span>${escapeHTML(item.time)}</span><span>${escapeHTML(item.venue)}</span></div>
           <div class="card-footer"><small>${escapeHTML(item.category)} · ${escapeHTML(new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric" }).format(date))}</small><span class="text-link">Details →</span></div>
         </div>
       </article>`;

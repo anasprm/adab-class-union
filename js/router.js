@@ -18,7 +18,7 @@ import {
   resetContentToDefaults,
   savePortalContentKey
 } from "./content.js";
-import { renderMonthlyFundTracker } from "./monthly-funds.js";
+import { renderMonthlyFundTracker, setMonthlyFundDirectory } from "./monthly-funds.js";
 import {
   authenticateDemoUser,
   getDemoAccounts,
@@ -48,9 +48,11 @@ export let portalEvents = [];
 let announcements = [];
 let financeEntries = initialFinanceEntries;
 let budgetAllocations = initialBudgetAllocations;
+let budgetLoading = false;
 let adminProfiles = PRESEEDED_ACCOUNTS;
 let reviewWorks = [];
 let reviewSuggestions = [];
+let programPosters = [];
 let financeLoading = false;
 let adminLoading = false;
 let adminActiveTab = "create"; // 'create', 'invites', 'roster', 'content', 'wings'
@@ -104,7 +106,7 @@ export function eventCard(event) {
       </div>
       <h3>${escapeHTML(event.title)}</h3>
       <p>${escapeHTML(event.description)}</p>
-      <div class="event-meta"><span>◷ ${escapeHTML(event.time)}</span><span>⌖ ${escapeHTML(event.venue)}</span></div>
+      <div class="event-meta"><span>${escapeHTML(event.time)}</span><span>${escapeHTML(event.venue)}</span></div>
       <div class="card-footer"><small>${escapeHTML(event.category)} · ${escapeHTML(formatEventDate(event.date))}</small><span class="text-link">Details →</span></div>
     </div>
   </article>`;
@@ -114,6 +116,12 @@ function profileCard(member) {
   return `<article class="card profile-card" data-member-roll="${escapeHTML(member.roll)}" tabindex="0" role="button" aria-label="View ${escapeHTML(member.name)} profile">
     <div class="card-body">${avatar(member.initials)}<div><span class="badge">${escapeHTML(member.role || "Member")}</span><h3>${escapeHTML(member.name)}</h3><p>${escapeHTML(member.roll || "")} · ${escapeHTML(member.district || "")}</p></div></div>
   </article>`;
+}
+
+function financeRecorder(entry) {
+  return entry.created_by
+    ? portalMembers?.find(member => member.id === entry.created_by)?.name || "Portal account"
+    : "Treasurer account";
 }
 
 function wingCard(wing) {
@@ -128,6 +136,9 @@ function wingCard(wing) {
 
 function workCard(work) {
   const isCode = work.type === "Code" || work.codeSnippet;
+  const verifiedAuthor = work.user_id
+    ? portalMembers?.find(member => member.id === work.user_id)?.name
+    : null;
   return `<article class="card work-card" data-work-id="${escapeHTML(work.id)}" tabindex="0" role="button" aria-label="Read ${escapeHTML(work.title)}">
     <div class="work-art" data-kind="${escapeHTML(work.kind || "work")}" aria-hidden="true"><img src="${escapeHTML(work.image || assetPaths.article)}" alt="" loading="lazy"></div>
     <div class="card-body">
@@ -136,7 +147,7 @@ function workCard(work) {
       <p>${escapeHTML(work.excerpt)}</p>
       ${isCode && work.codeSnippet ? `<pre class="work-code-preview"><code>${escapeHTML(work.codeSnippet.split("\n").slice(0, 4).join("\n"))}</code></pre>` : ""}
       ${work.projectUrl ? `<p class="work-link-preview"><a class="text-link" href="${escapeHTML(work.projectUrl)}" target="_blank" rel="noopener">Explore Project ↗</a></p>` : ""}
-      <div class="card-footer"><small>By ${escapeHTML(work.author || work.author_name || "ADAB Student")}</small><span class="text-link">Explore →</span></div>
+      <div class="card-footer"><small>By ${escapeHTML(verifiedAuthor || "Student contributor")}</small><span class="text-link">Explore →</span></div>
     </div>
   </article>`;
 }
@@ -162,9 +173,6 @@ function renderHome() {
     </div>
     <div class="hero-art" aria-hidden="true">
       <div class="hero-orbit"><img src="${assetPaths.logo}" alt="ADAB Logo"></div>
-      <span class="orbit-dot orbit-dot-one">✦</span>
-      <span class="orbit-dot orbit-dot-two">⌁</span>
-      <span class="orbit-dot orbit-dot-three">◈</span>
     </div>
   </section>
   <div class="stat-strip" aria-label="Union at a glance">
@@ -246,102 +254,167 @@ function renderAbout() {
 
 function renderPrograms() {
   const allEvents = [...portalEvents, ...events];
-  const programsList = allEvents.map((item, idx) => ({
-    id: item.id || `prog-${idx}`,
-    title: item.title,
-    wing: item.category || "Union Wing",
-    author: item.venue || "Campus Auditorium",
-    date: item.time || "Recent Program",
-    image: item.image || assetPaths.event,
-    likes: 42 + (idx * 7) % 35,
-    comments: [
-      { user: "Fathima Shirin", text: "Amazing program! Everyone enjoyed it." },
-      { user: "Abdul Hadi", text: "Great coordination and participation." }
-    ],
-    caption: item.description || "A wonderful campus program organized by the ADAB Class Union students.",
-    hasResult: item.status === "Completed" || idx % 2 === 0,
-    result: {
-      position: idx % 3 === 0 ? "1st Place 🏆" : idx % 3 === 1 ? "2nd Place 🥈" : "Winner",
-      score: `${85 + (idx * 3) % 15} / 100`,
-      notes: "Successfully completed with stellar participation across all house teams."
-    }
-  }));
-
-  const roleLabel = currentProfile ? (roleNames[currentProfile.role] || currentProfile.role) : "Student Visitor";
-
-  return `<div class="page-shell">
-    <header>
-      <p class="eyebrow">Instagram-style campus feed</p>
-      <h1 class="page-title">Programs & Poster Feed</h1>
-      <p class="lead">Explore class programs, event posters, live engagement, and flip-card result disclosures.</p>
-    </header>
-
-    <section class="section-block">
-      <div class="ig-feed-grid">
-        ${programsList.map(prog => `
-        <article class="card ig-post-card" data-post-id="${escapeHTML(prog.id)}">
+  const programsList = [
+    ...allEvents.map((item, idx) => ({
+      id: item.id || `prog-${idx}`,
+      title: item.title,
+      wing: item.wing_name || item.category || "Union Program",
+      author: portalMembers?.find(member => member.id === item.created_by)?.name || null,
+      venue: item.venue || "Campus Auditorium",
+      date: item.time || "Recent Program",
+      image: item.image || assetPaths.event,
+      likes: 42 + (idx * 7) % 35,
+      comments: [],
+      caption: item.description || "A program organized by the ADAB Class Union.",
+      result: [
+        item.first_prize && { position: "1st Prize", recipient: item.first_prize },
+        item.second_prize && { position: "2nd Prize", recipient: item.second_prize },
+        item.third_prize && { position: "3rd Prize", recipient: item.third_prize }
+      ].filter(Boolean)
+    })),
+    ...programPosters.map(item => ({
+      id: item.id,
+      title: item.title,
+      wing: portalWings.find(wing => wing.id === item.wing_id)?.name || item.category || "Union Program",
+      author: portalMembers?.find(member => member.id === item.created_by)?.name || null,
+      venue: item.venue,
+      date: item.time_label,
+      image: item.poster_url || assetPaths.event,
+      video: item.video_url || null,
+      likes: 0,
+      comments: [],
+      caption: item.description,
+      result: [
+        item.first_prize && { position: "1st Prize", recipient: item.first_prize },
+        item.second_prize && { position: "2nd Prize", recipient: item.second_prize },
+        item.third_prize && { position: "3rd Prize", recipient: item.third_prize }
+      ].filter(Boolean)
+    }))
+  ].map(program => ({ ...program, hasResult: program.result.length > 0 }));
+  const posterPrograms = programsList.filter(program => !program.video);
+  const videoPrograms = programsList.filter(program => program.video);
+  const renderProgramCards = programs => programs.map(prog => `
+        <article class="ig-post-card program-card" data-post-id="${escapeHTML(prog.id)}" aria-label="${escapeHTML(prog.title)} ${prog.video ? "video reel" : "poster"}">
           <div class="ig-card-inner">
-            <!-- FRONT OF CARD -->
             <div class="ig-card-front">
-              <div class="ig-post-header">
-                <div class="ig-post-user">
-                  ${avatar(prog.wing.slice(0, 2).toUpperCase())}
-                  <div>
-                    <strong>${escapeHTML(prog.wing)}</strong>
-                    <small>${escapeHTML(prog.author)}</small>
-                  </div>
-                </div>
-                <span class="badge">${escapeHTML(prog.date)}</span>
-              </div>
-              <div class="ig-media-area" data-lightbox-img="${escapeHTML(prog.image)}" data-lightbox-title="${escapeHTML(prog.title)}">
-                <img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">
-                <span class="ig-zoom-hint">🔍 Tap to Zoom</span>
-              </div>
-              <div class="ig-post-actions">
-                <div class="ig-action-buttons">
-                  <button type="button" class="ig-action-button" data-action="like-post" aria-label="Like post">♡ <span class="like-count">${prog.likes}</span></button>
-                  <button type="button" class="ig-action-button" data-action="toggle-comments" aria-label="Toggle comments">💬 ${prog.comments.length}</button>
-                </div>
-                ${prog.hasResult ? `<button type="button" class="button button-secondary" data-action="flip-card" style="min-height: 36px; padding: 0 12px; font-size: .8rem;">View Results ↻</button>` : ""}
-              </div>
-              <div class="ig-post-body">
-                <p class="ig-post-caption"><strong>${escapeHTML(prog.title)}</strong> ${escapeHTML(prog.caption)}</p>
-                <div class="ig-comments-section" style="display: none;">
-                  <div class="ig-comments-box">
-                    ${prog.comments.map(c => `<div class="ig-comment-item"><strong>${escapeHTML(c.user)}</strong>${escapeHTML(c.text)}</div>`).join("")}
-                  </div>
-                  <form class="ig-comment-form" data-post-comment="${escapeHTML(prog.id)}">
-                    <input type="text" placeholder="Add a comment..." required maxlength="200">
-                    <button type="submit" class="button">Post</button>
-                  </form>
-                </div>
-                <div class="ig-post-meta">
-                  <small>ADAB Campus Feed</small>
-                  <small>Verified Union Program</small>
+              <div class="ig-media-area">
+                ${prog.video
+                  ? `<video class="program-reel-video" src="${escapeHTML(prog.video)}" autoplay muted loop playsinline preload="metadata" aria-label="${escapeHTML(prog.title)} video"></video>`
+                  : `<img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">`}
+                <div class="program-poster-overlay">
+                  <span class="program-poster-category">${escapeHTML(prog.wing)}</span>
+                  <strong>${escapeHTML(prog.title)}</strong>
+                  <small>${escapeHTML(prog.date)} · ${escapeHTML(prog.venue)}</small>
+                  ${prog.author ? `<small>By ${escapeHTML(prog.author)}</small>` : ""}
+                  ${prog.video ? `<span class="program-media-kind">Video reel</span>` : ""}
+                  ${prog.hasResult ? `<button type="button" class="program-result-trigger" data-action="flip-card">View 1st–3rd prizes</button>` : ""}
                 </div>
               </div>
             </div>
 
-            <!-- BACK OF CARD (FLIP RESULT DISCLOSURE) -->
             <div class="ig-card-back">
               <div class="ig-result-header">
-                <h3 class="ig-result-title">Program Results & Scorecard</h3>
+                <h3 class="ig-result-title">${escapeHTML(prog.title)} · Results</h3>
                 <button type="button" class="icon-button modal-close" data-action="flip-card" aria-label="Flip back">×</button>
               </div>
               <div class="ig-result-content">
-                <span class="ig-winner-badge">${escapeHTML(prog.result.position)}</span>
-                <div class="ig-score-display">${escapeHTML(prog.result.score)}</div>
-                <p class="ig-result-notes">${escapeHTML(prog.result.notes)}</p>
+                <ol class="program-prize-list">
+                  ${prog.result.map(prize => `<li class="program-prize-row"><span class="ig-winner-badge">${escapeHTML(prize.position)}</span><strong>${escapeHTML(prize.recipient || "")}</strong></li>`).join("")}
+                </ol>
               </div>
-              <div class="ig-result-footer" style="padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                <small>Verified by Wing Account Holder</small>
+              <div class="ig-result-footer">
+                <small>Published program results</small>
                 <button type="button" class="text-link" data-action="flip-card">← Back to poster</button>
               </div>
             </div>
           </div>
-        endarticle>`)}
+        </article>`).join("");
+  const canPublishProgram = currentProfile?.is_active
+    && ["developer", "committee", "wing"].includes(currentProfile.role);
+  const assignedWing = portalWings.find(wing => wing.id === currentProfile?.wing_id);
+  const wingField = currentProfile?.role === "wing"
+    ? `<input type="hidden" name="wing_id" value="${escapeHTML(currentProfile.wing_id)}"><p class="form-note">Posting for <strong>${escapeHTML(assignedWing?.name || "your assigned wing")}</strong>.</p>`
+    : `<div class="form-field">
+        <label for="program-wing">Publishing wing</label>
+        <select id="program-wing" name="wing_id">
+          <option value="">Union-wide program</option>
+          ${portalWings.map(wing => `<option value="${escapeHTML(wing.id)}">${escapeHTML(wing.name)}</option>`).join("")}
+        </select>
+      </div>`;
+
+  return `<div class="page-shell programs-page">
+    <header>
+      <p class="eyebrow">Program archive</p>
+      <h1 class="page-title">Programs</h1>
+      <p class="lead">Browse program posters, video reels, and published competition results.</p>
+    </header>
+
+    <div class="program-grid-tabs" role="tablist" aria-label="Program media">
+      <button class="program-grid-tab is-active" id="program-posters-tab" type="button" role="tab" aria-selected="true" aria-controls="program-posters-panel" data-program-tab="poster">Posters <span>${posterPrograms.length}</span></button>
+      <button class="program-grid-tab" id="program-videos-tab" type="button" role="tab" tabindex="-1" aria-selected="false" aria-controls="program-videos-panel" data-program-tab="video">Videos <span>${videoPrograms.length}</span></button>
+    </div>
+    <section class="section-block program-tab-panel" id="program-posters-panel" role="tabpanel" aria-labelledby="program-posters-tab" data-program-panel="poster">
+      <div class="ig-feed-grid">
+        ${renderProgramCards(posterPrograms)}
       </div>
+      ${posterPrograms.length ? "" : `<div class="program-empty-state"><strong>No posters yet</strong><p>Published program posters will appear here.</p></div>`}
     </section>
+    <section class="section-block program-tab-panel" id="program-videos-panel" role="tabpanel" aria-labelledby="program-videos-tab" data-program-panel="video" hidden>
+      <div class="ig-feed-grid">
+        ${renderProgramCards(videoPrograms)}
+      </div>
+      ${videoPrograms.length ? "" : `<div class="program-empty-state"><strong>No videos yet</strong><p>Published program videos will appear here.</p></div>`}
+    </section>
+    ${canPublishProgram ? `
+    <section class="section-block program-publisher">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Developer · Core Committee · Wing Accounts</p>
+          <h2 class="section-title" id="program-publisher-title">Publish a poster</h2>
+          <p class="lead" id="program-publisher-lead">Add a poster and the recipients for 1st, 2nd, and 3rd prize.</p>
+        </div>
+      </div>
+      <form class="contact-form" id="program-poster-form">
+        <div class="form-row">
+          <div class="form-field"><label for="program-title">Program title</label><input id="program-title" name="title" required maxlength="120"></div>
+          <div class="form-field">
+            <label for="program-category">Category</label>
+            <select id="program-category" name="category" required>
+              <option value="Academic">Academic</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Sports">Sports</option>
+              <option value="Arts">Arts</option>
+              <option value="Social">Social</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label for="program-date">Program date and time</label><input id="program-date" name="starts_at" type="datetime-local" required></div>
+          <div class="form-field"><label for="program-time-label">Time shown on poster card</label><input id="program-time-label" name="time_label" required maxlength="80" placeholder="e.g. 10:00 AM – 1:00 PM"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label for="program-venue">Venue</label><input id="program-venue" name="venue" required maxlength="120"></div>
+          ${wingField}
+        </div>
+        <div class="form-field"><label for="program-description">Description</label><textarea id="program-description" name="description" required maxlength="1000"></textarea></div>
+        <div class="form-field">
+          <label id="program-media-label" for="program-media">Poster image</label>
+          <input id="program-media" name="media" type="file" accept="image/jpeg,image/png,image/webp" required>
+          <input id="program-media-kind" name="media_kind" type="hidden" value="poster">
+          <small class="form-note" id="program-media-hint">Upload a JPEG, PNG, or WebP poster up to 10 MB.</small>
+        </div>
+        <fieldset class="program-prize-fields">
+          <legend>Program results</legend>
+          <div class="form-row">
+            <div class="form-field"><label for="program-first-prize">1st prize recipient / team</label><input id="program-first-prize" name="first_prize" required maxlength="120"></div>
+            <div class="form-field"><label for="program-second-prize">2nd prize recipient / team</label><input id="program-second-prize" name="second_prize" required maxlength="120"></div>
+            <div class="form-field"><label for="program-third-prize">3rd prize recipient / team</label><input id="program-third-prize" name="third_prize" required maxlength="120"></div>
+          </div>
+        </fieldset>
+        <button class="button" id="program-publish-button" type="submit">Publish poster and results</button>
+      </form>
+    </section>` : ""}
   </div>`;
 }
 
@@ -411,19 +484,25 @@ function renderEvents() {
       </form>
     </section>` : `
     <section class="section-block" style="text-align: center; padding: 24px; border: 1px dashed var(--border-color); border-radius: var(--radius);">
-      <p class="form-note">🔒 Event creation is restricted to Core Committee and Wing Account holders. Switch your role above to test creating events.</p>
+      <p class="form-note">Event creation is restricted to Core Committee and Wing Account holders. Switch your role above to test creating events.</p>
     </section>`}
   </div>`;
 }
 
 function renderCore() {
+  const members = coreMembers.flatMap(member => {
+    const account = portalMembers?.find(student => student.roll === member.roll);
+    return account ? [{ ...member, id: account.id, name: account.name, district: account.district }] : [];
+  });
   return `<div class="page-shell">
     <header>
       <p class="eyebrow">Student leadership</p>
       <h1 class="page-title">Meet the core team.</h1>
       <p class="lead">Four core leaders, one shared commitment: making the union a welcoming place to learn, contribute, and belong.</p>
     </header>
-    <section class="section-block"><div class="card-grid">${coreMembers.map(profileCard).join("")}</div></section>
+    <section class="section-block">${members.length
+      ? `<div class="card-grid">${members.map(profileCard).join("")}</div>`
+      : emptyState("Student accounts are not available", "The core team will appear here when the active student directory is available.")}</section>
   </div>`;
 }
 
@@ -439,7 +518,7 @@ function renderWings() {
 }
 
 function renderMembers() {
-  const directory = portalMembers || students;
+  const directory = (portalMembers || []).filter(student => student.role === "student");
   return `<div class="page-shell">
     <header>
       <p class="eyebrow">Our class, at a glance</p>
@@ -454,6 +533,7 @@ function renderMembers() {
       </div>
       <p class="result-count" id="member-result-count" aria-live="polite"></p>
       <div class="card-grid" id="member-grid"></div>
+      ${directory.length ? "" : `<p class="form-note">Active student accounts will appear here when the directory is available.</p>`}
     </section>
   </div>`;
 }
@@ -477,7 +557,7 @@ function renderWorks() {
       <form class="contact-form" id="creative-work-form">
         <div class="form-row">
           <div class="form-field"><label for="work-title">Work title</label><input id="work-title" name="title" required maxlength="100" placeholder="e.g. Horizons of Hope"></div>
-          <div class="form-field"><label for="work-author">Your display name</label><input id="work-author" name="author" required maxlength="80" value="${escapeHTML(currentProfile.display_name || "")}"></div>
+          <div class="form-field"><label for="work-author">Your account name</label><input id="work-author" name="author" readonly required maxlength="80" value="${escapeHTML(currentProfile.display_name || "")}"></div>
         </div>
         <div class="form-row">
           <div class="form-field">
@@ -545,7 +625,7 @@ function renderFinance() {
     filtered = filtered.filter(e =>
       (e.category && e.category.toLowerCase().includes(q)) ||
       (e.description && e.description.toLowerCase().includes(q)) ||
-      (e.recorded_by && e.recorded_by.toLowerCase().includes(q))
+      financeRecorder(e).toLowerCase().includes(q)
     );
   }
 
@@ -557,7 +637,7 @@ function renderFinance() {
     <header>
       <div class="finance-header-badge-row">
         <span class="badge">${escapeHTML(roleNames[currentProfile.role] || "Member")}</span>
-        <span class="badge badge-verified">✓ Verified Union Member</span>
+        <span class="badge badge-verified">Verified Union Member</span>
       </div>
       <p class="eyebrow">${escapeHTML(getContent("finance_eyebrow"))}</p>
       <h1 class="page-title">${escapeHTML(getContent("finance_title"))}</h1>
@@ -589,13 +669,22 @@ function renderFinance() {
         <div>
           <p class="eyebrow">Budget allocations</p>
           <h2 class="section-title">Class budget utilization</h2>
+          ${canEdit ? `<p>Update category limits from the treasury desk.</p>` : ""}
         </div>
       </div>
-      <div class="budget-allocation-grid">
-        ${(budgetAllocations || []).map(b => {
-          const spent = activeEntries.filter(e => e.entry_type === "expense" && e.category === b.category).reduce((s, e) => s + Number(e.amount), 0) || b.spent || 0;
-          const pct = Math.min(100, Math.round((spent / (b.allocated_amount || b.allocated || 1)) * 100));
-          const allocated = b.allocated_amount || b.allocated || 0;
+      ${budgetLoading
+        ? emptyState("Loading budgets", "Retrieving the current category allocations.")
+        : (budgetAllocations || []).length
+          ? `<div class="budget-allocation-grid">
+        ${(budgetAllocations || []).map((b, index) => {
+          const spent = activeEntries
+            .filter(entry => entry.entry_type === "expense" && entry.category === b.category)
+            .reduce((sum, entry) => sum + Number(entry.amount), 0);
+          const allocated = Number(b.allocated_amount ?? b.allocated ?? 0);
+          const pct = allocated > 0
+            ? Math.min(100, Math.round((spent / allocated) * 100))
+            : spent > 0 ? 100 : 0;
+          const inputId = `budget-allocation-${index}`;
           return `<div class="budget-card">
             <div class="budget-card-header">
               <strong>${escapeHTML(b.category)}</strong>
@@ -608,9 +697,17 @@ function renderFinance() {
               <small>Spent: ${formatMoney(spent)}</small>
               <small>Budget: ${formatMoney(allocated)}</small>
             </div>
+            ${canEdit ? `<form class="budget-edit-form" data-budget-category="${escapeHTML(b.category)}">
+              <label class="sr-only" for="${inputId}">Budget allocation for ${escapeHTML(b.category)}</label>
+              <div class="budget-edit-controls">
+                <input id="${inputId}" name="allocated_amount" type="number" min="0" max="9999999999.99" step="0.01" value="${allocated}" required>
+                <button class="button button-secondary" type="submit">Save budget</button>
+              </div>
+            </form>` : ""}
           </div>`;
         }).join("")}
-      </div>
+      </div>`
+          : emptyState("No budgets available", "Category allocations will appear here when they are configured.")}
     </section>
 
     <!-- Monthly Fund Tracker & Student Dues Management -->
@@ -693,7 +790,7 @@ function renderFinance() {
         </select>
       </div>
 
-      ${filtered.length ? `
+      ${financeLoading ? emptyState("Loading ledger entries", "Retrieving the latest finance records.") : filtered.length ? `
       <div class="ledger-table-wrapper">
         <table class="ledger-table">
           <thead>
@@ -714,17 +811,17 @@ function renderFinance() {
               <td><span class="badge ${entry.entry_type === "income" ? "badge-income" : "badge-expense"}">${escapeHTML(entry.category || "General")}</span></td>
               <td>
                 <strong>${escapeHTML(entry.description || "")}</strong>
-                <div class="text-muted"><small>Recorded by: ${escapeHTML(entry.recorded_by || "Treasurer")}</small></div>
+                <div class="text-muted"><small>Recorded by: ${escapeHTML(financeRecorder(entry))}</small></div>
               </td>
               <td><span class="badge ${entry.entry_type === "income" ? "badge-income" : "badge-expense"}">${entry.entry_type === "income" ? "+ Income" : "- Expense"}</span></td>
               <td class="${entry.entry_type === "income" ? "text-income" : "text-expense"}"><strong>${entry.entry_type === "income" ? "+" : "-"}${formatMoney(entry.amount)}</strong></td>
               <td>
-                ${entry.attachment_path || entry.attachment_name ? `<button type="button" class="text-link" data-view-receipt="${escapeHTML(entry.attachment_path || entry.attachment_name)}">View receipt 📎</button>` : `<span class="text-muted">None</span>`}
+                ${entry.attachment_path || entry.attachment_name ? `<button type="button" class="text-link" data-view-receipt="${escapeHTML(entry.attachment_path || entry.attachment_name)}">View receipt</button>` : `<span class="text-muted">None</span>`}
               </td>
               ${canEdit ? `
               <td>
                 <div class="table-actions">
-                  <button type="button" class="button-icon-del" data-finance-delete="${escapeHTML(entry.id)}" aria-label="Delete entry">🗑</button>
+                  <button type="button" class="button-icon-del" data-finance-delete="${escapeHTML(entry.id)}" aria-label="Delete entry">Delete</button>
                 </div>
               </td>` : ""}
             </tr>`).join("")}
@@ -785,7 +882,6 @@ function renderLogin() {
           <h1>A place for every voice.</h1>
           <p>Strict role-based access for Developer, Teacher, Core Committee, Treasurer, Students, and Wings.</p>
         </div>
-        <div class="auth-decoration" aria-hidden="true"><span>✦</span><span>✳</span><span>◈</span></div>
         <p class="auth-aside-note">LEARN TOGETHER · GROW TOGETHER</p>
       </aside>
       <div class="auth-content">
@@ -915,7 +1011,6 @@ function renderAccount() {
 
         <div class="account-sidebar">
           <div class="card card-body account-sidebar-card">
-            <div class="admin-panel-icon" aria-hidden="true">✦</div>
             <h3>Creative & code submissions</h3>
             <p>Submit your articles, poetry, Arabic/English calligraphy, digital art, science projects, or coding repositories for union moderation.</p>
             <a class="button button-secondary" href="#works">Go to work upload form →</a>
@@ -956,7 +1051,7 @@ function renderAccount() {
               <h3>${escapeHTML(work.title)}</h3>
               <p>By <strong>${escapeHTML(work.author_name || "Student")}</strong> · ${escapeHTML(work.excerpt || "")}</p>
               ${work.project_url ? `<p><a class="text-link" href="${escapeHTML(work.project_url)}" target="_blank" rel="noopener">Inspect Project Link ↗</a></p>` : ""}
-              ${work.attachment_path ? `<p><button class="text-link" type="button" data-work-file="${escapeHTML(work.attachment_path)}">View submitted attachment 📎</button></p>` : ""}
+              ${work.attachment_path ? `<p><button class="text-link" type="button" data-work-file="${escapeHTML(work.attachment_path)}">View submitted attachment</button></p>` : ""}
             </div>
             <form class="review-work-form" data-work-review="${escapeHTML(work.id)}">
               <select name="status">
@@ -1134,23 +1229,18 @@ function renderAdmin() {
     <!-- Admin Navigation Tabs -->
     <div class="admin-tab-nav" role="tablist" aria-label="Admin sections">
       <a class="admin-tab-btn ${adminActiveTab === "create" ? "is-active" : ""}" href="#admin?tab=create" data-admin-tab="create" role="tab" aria-selected="${adminActiveTab === "create"}">
-        <span class="admin-tab-icon" aria-hidden="true">＋</span>
         <span class="admin-tab-copy"><strong>Create account</strong><small>Username &amp; password</small></span>
       </a>
       <a class="admin-tab-btn ${adminActiveTab === "invites" ? "is-active" : ""}" href="#admin?tab=invites" data-admin-tab="invites" role="tab" aria-selected="${adminActiveTab === "invites"}">
-        <span class="admin-tab-icon" aria-hidden="true">✉</span>
         <span class="admin-tab-copy"><strong>Email invites</strong><small>Single-use links</small></span>
       </a>
       <a class="admin-tab-btn ${adminActiveTab === "roster" ? "is-active" : ""}" href="#admin?tab=roster" data-admin-tab="roster" role="tab" aria-selected="${adminActiveTab === "roster"}">
-        <span class="admin-tab-icon" aria-hidden="true">☰</span>
         <span class="admin-tab-copy"><strong>Account roster</strong><small>Roles &amp; lifecycles</small></span>
       </a>
       <a class="admin-tab-btn ${adminActiveTab === "content" ? "is-active" : ""}" href="#admin?tab=content" data-admin-tab="content" role="tab" aria-selected="${adminActiveTab === "content"}">
-        <span class="admin-tab-icon" aria-hidden="true">✎</span>
         <span class="admin-tab-copy"><strong>Page copy</strong><small>Headlines &amp; text</small></span>
       </a>
       <a class="admin-tab-btn ${adminActiveTab === "wings" ? "is-active" : ""}" href="#admin?tab=wings" data-admin-tab="wings" role="tab" aria-selected="${adminActiveTab === "wings"}">
-        <span class="admin-tab-icon" aria-hidden="true">◈</span>
         <span class="admin-tab-copy"><strong>Wings</strong><small>7 student domains</small></span>
       </a>
     </div>
@@ -1160,7 +1250,6 @@ function renderAdmin() {
     <div class="admin-grid">
       <section class="admin-panel">
         <div class="admin-panel-head">
-          <span class="admin-panel-icon" aria-hidden="true">＋</span>
           <div>
             <h2>Create an account</h2>
             <p>No email address needed. Pick a username and password, share them with the person, and they can sign in immediately.</p>
@@ -1209,7 +1298,6 @@ function renderAdmin() {
         </form>
 
         <div id="create-result-container" class="admin-result ${lastCreatedAccount ? "" : "is-hidden"}" ${lastCreatedAccount ? "" : "hidden"}>
-          <div class="admin-result-icon" aria-hidden="true">✓</div>
           <div class="admin-result-body">
             <strong>Account created</strong>
             <p id="create-result-message">${lastCreatedAccount ? escapeHTML(lastCreatedAccount.message || "") : ""}</p>
@@ -1225,7 +1313,6 @@ function renderAdmin() {
       <aside class="admin-side">
         <section class="admin-panel admin-panel-compact">
           <div class="admin-panel-head">
-            <span class="admin-panel-icon" aria-hidden="true">◎</span>
             <div><h2>Account slots</h2><p>Active accounts against each role limit.</p></div>
           </div>
           <div class="admin-role-list">
@@ -1623,56 +1710,56 @@ const AWARD_CHECKPOINT_KEY = "award_checkpoint_v1";
 
 const AWARD_CRITERIA = [
   {
-    id: "academic",
-    label: "Academic Performance",
+    id: "class-programmes",
+    label: "Class Programmes",
+    weight: 15,
+    hint: "Union-organised programmes: debates, quizzes, cultural evenings, and inter-house events."
+  },
+  {
+    id: "samia",
+    label: "SAMIA",
+    weight: 10,
+    hint: "Participation and reporting under the SAMIA activity category."
+  },
+  {
+    id: "highlight",
+    label: "Highlight",
+    weight: 10,
+    hint: "The union's flagship highlight programme, from planning through execution."
+  },
+  {
+    id: "campus-pubs",
+    label: "Campus Publications",
     weight: 20,
-    hint: "Term results, subject rankings, and consistency across assessments."
+    hint: "Editorial and creative publications circulated on campus: magazine, wall journal, newsletters."
   },
   {
-    id: "attendance",
-    label: "Attendance & Punctuality",
-    weight: 15,
-    hint: "Attendance percentage and punctuality through the academic year."
+    id: "outreach-pubs",
+    label: "Outreach Publications",
+    weight: 25,
+    hint: "Outreach publications and external visibility — the heaviest single criterion."
   },
   {
-    id: "leadership",
-    label: "Leadership & Initiative",
-    weight: 15,
-    hint: "Union responsibilities, wing roles, and self-initiated projects."
-  },
-  {
-    id: "cultural",
-    label: "Literary & Cultural Participation",
-    weight: 15,
-    hint: "Stage events, publications, and inter-house cultural contests."
-  },
-  {
-    id: "sports",
-    label: "Sports & Physical Fitness",
+    id: "bimonthly",
+    label: "Bonus Bimonthly Reports",
     weight: 10,
-    hint: "Athletic participation, team representation, and physical education."
+    hint: "Bimonthly reports filed on schedule, each accepted as bonus evidence."
   },
   {
-    id: "service",
-    label: "Community Service & Outreach",
-    weight: 15,
-    hint: "Volunteering, SAMIA outreach drives, and external collaborations."
-  },
-  {
-    id: "conduct",
-    label: "Conduct & Values",
+    id: "assembly",
+    label: "Assembly",
     weight: 10,
-    hint: "Discipline, cooperation, and conduct recorded by class teachers."
+    hint: "General assemblies convened, minuted, and followed up on."
   }
 ];
 
 const AWARD_RATING_LABELS = [
-  "Not started",
-  "Getting started",
-  "Developing",
-  "Consistent",
+  "Not evidenced",
+  "Minimal",
+  "Partial",
+  "Adequate",
   "Strong",
-  "Outstanding"
+  "Exemplary"
 ];
 
 function readAwardCheckpoint() {
@@ -1706,6 +1793,42 @@ function computeAwardScore(state) {
   }, 0);
 }
 
+function awardCriterionPoints(state, criterion) {
+  const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
+  return Math.round((rating / 5) * criterion.weight);
+}
+
+function awardReadiness(score, ratedCount) {
+  if (!ratedCount) {
+    return {
+      label: "Not started",
+      detail: "No criterion has been assessed yet. Begin with Outreach Publications, the heaviest weighted criterion."
+    };
+  }
+  if (score < 40) {
+    return {
+      label: "Below threshold",
+      detail: "Core evidence is thin. Prioritise Outreach Publications and Campus Publications before anything else."
+    };
+  }
+  if (score < 60) {
+    return {
+      label: "Developing",
+      detail: "A working base exists, but the dossier will not survive scrutiny yet. Close the lowest-rated criteria."
+    };
+  }
+  if (score < 80) {
+    return {
+      label: "On track",
+      detail: "Most criteria are evidenced. Attach documentary proof for each row and resolve remaining gaps."
+    };
+  }
+  return {
+    label: "Submission ready",
+    detail: "The dossier reads as complete. Verify every attachment, then submit to the class advisor."
+  };
+}
+
 function buildAwardRecommendations(state) {
   const gaps = AWARD_CRITERIA
     .map(criterion => ({
@@ -1716,11 +1839,11 @@ function buildAwardRecommendations(state) {
     .sort((a, b) => (a.rating - b.rating) || (b.weight - a.weight));
 
   if (!gaps.length) {
-    return ["Every criterion is rated consistent or above. Compile your supporting documents and submit before the deadline."];
+    return ["Every criterion is rated strong or above. Compile your supporting documents and submit before the deadline."];
   }
 
   return gaps.slice(0, 4).map(criterion =>
-    `${criterion.label} is rated ${criterion.rating}/5 — ${criterion.hint}`
+    `${criterion.label} — rated ${criterion.rating}/5 of ${criterion.weight}%. ${criterion.hint}`
   );
 }
 
@@ -1730,51 +1853,83 @@ function renderAwardScorecardSelfEvaluation() {
   const percent = Math.round(score);
   const recommendations = buildAwardRecommendations(state);
   const ratedCount = AWARD_CRITERIA.filter(criterion => Number(state.ratings[criterion.id]) > 0).length;
+  const readiness = awardReadiness(score, ratedCount);
 
-  return `<div class="award-selfeval-page">
-    <header class="award-selfeval-header">
-      <p class="eyebrow">Self-Evaluation</p>
-      <h2>Award readiness scorecard</h2>
-      <p class="lead">Rate yourself honestly on each of the seven criteria. Your entries are saved on this device and can be revised at any time.</p>
-      <div class="award-selfeval-score" data-award-score>${percent}%</div>
-      <p class="award-selfeval-percent" data-award-summary>${ratedCount} of ${AWARD_CRITERIA.length} criteria rated · weighted total ${score.toFixed(1)} / 100</p>
+  return `<div class="award-ledger">
+    <header class="award-ledger-head">
+      <p class="eyebrow">Self-Evaluation · Best Union Award</p>
+      <h1 class="page-title">Award readiness audit</h1>
+      <p class="lead">An administrative record of the seven official criteria. Rate the evidence you hold for each row; the estimated total updates as you work. Entries are stored on this device.</p>
+
+      <div class="award-meter">
+        <div class="award-meter-head">
+          <span class="award-meter-label">Estimated total</span>
+          <strong class="award-meter-value" data-award-score>${percent}<small>/100</small></strong>
+        </div>
+        <div class="award-meter-track"><span class="award-meter-fill" data-award-bar style="width:${percent}%"></span></div>
+        <p class="award-meter-note" data-award-summary>${ratedCount} of ${AWARD_CRITERIA.length} criteria assessed · ${Math.round(score)} of 100 points</p>
+      </div>
+
+      <div class="award-status" data-award-status data-state="${readiness.label.toLowerCase().replaceAll(" ", "-")}">
+        <span class="award-status-label">Status</span>
+        <strong class="award-status-value" data-award-status-label>${escapeHTML(readiness.label)}</strong>
+        <p class="award-status-detail">${escapeHTML(readiness.detail)}</p>
+      </div>
     </header>
 
-    <section class="section-block" style="margin-top:28px">
-      <div class="award-selfeval-grid">
-        ${AWARD_CRITERIA.map(criterion => {
-          const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
-          return `<article class="award-selfeval-card" data-award-card="${criterion.id}">
-            <div class="category-name">${escapeHTML(criterion.label)}</div>
-            <div class="status">Weight ${criterion.weight}% · ${escapeHTML(criterion.hint)}</div>
-            <label class="award-field">
-              <span>Your rating</span>
-              <select data-award-rating="${criterion.id}">
-                ${AWARD_RATING_LABELS.map((label, value) =>
-                  `<option value="${value}"${value === rating ? " selected" : ""}>${value} — ${label}</option>`
-                ).join("")}
-              </select>
-            </label>
-            <label class="award-field">
-              <span>Evidence or next step</span>
-              <input type="text" maxlength="160" data-award-evidence="${criterion.id}" value="${escapeHTML(state.evidence[criterion.id] || "")}" placeholder="Certificate, result sheet, or planned action">
-            </label>
-            <div class="evidence-count">${rating > 0 ? `${Math.round((rating / 5) * criterion.weight)} of ${criterion.weight} points` : "Not yet rated"}</div>
-          </article>`;
-        }).join("")}
-      </div>
+    <section class="award-sheet" aria-label="Award criteria ledger">
+      <table class="award-table">
+        <thead>
+          <tr>
+            <th scope="col">Criterion</th>
+            <th scope="col" class="award-col-weight">Weight</th>
+            <th scope="col" class="award-col-rating">Assessment</th>
+            <th scope="col">Evidence on file</th>
+            <th scope="col" class="award-col-points">Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${AWARD_CRITERIA.map(criterion => {
+            const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
+            return `<tr data-award-row="${criterion.id}">
+              <th scope="row">
+                <span class="award-criterion">${escapeHTML(criterion.label)}</span>
+                <span class="award-hint">${escapeHTML(criterion.hint)}</span>
+              </th>
+              <td class="award-col-weight">${criterion.weight}%</td>
+              <td class="award-col-rating">
+                <select class="award-select" data-award-rating="${criterion.id}" aria-label="Assessment for ${escapeHTML(criterion.label)}">
+                  ${AWARD_RATING_LABELS.map((label, value) =>
+                    `<option value="${value}"${value === rating ? " selected" : ""}>${value} — ${label}</option>`
+                  ).join("")}
+                </select>
+              </td>
+              <td>
+                <input class="award-input" type="text" maxlength="160" data-award-evidence="${criterion.id}" value="${escapeHTML(state.evidence[criterion.id] || "")}" placeholder="Certificate, report reference, or planned action" aria-label="Evidence for ${escapeHTML(criterion.label)}">
+              </td>
+              <td class="award-col-points" data-award-points>${awardCriterionPoints(state, criterion)}<small>/${criterion.weight}</small></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total estimated score</th>
+            <td class="award-col-weight">100%</td>
+            <td colspan="2"></td>
+            <td class="award-col-points award-total" data-award-total>${Math.round(score)}<small>/100</small></td>
+          </tr>
+        </tfoot>
+      </table>
     </section>
 
-    <section class="award-recommendations">
-      <h3>Recommendations</h3>
-      <ul data-award-recommendations>
-        ${recommendations.map(item => `<li>${escapeHTML(item)}</li>`).join("")}
-      </ul>
+    <section class="award-notes" data-award-recommendations>
+      ${recommendations.map(item => `<p>${escapeHTML(item)}</p>`).join("")}
     </section>
 
-    <p class="award-footer">
-      <button type="button" class="button button-secondary" data-award-reset>Reset self-evaluation</button>
-    </p>
+    <footer class="award-actions">
+      <p class="award-footnote">Evidence is recorded against this device only. Attach the original documents to your submission folder.</p>
+      <button type="button" class="button button-secondary" data-award-reset>Reset assessment</button>
+    </footer>
   </div>`;
 }
 
@@ -1793,12 +1948,15 @@ export function applyAwardCheckpointChange({ field, id, value }) {
 
   const score = computeAwardScore(state);
   const ratedCount = AWARD_CRITERIA.filter(criterion => Number(state.ratings[criterion.id]) > 0).length;
+  const readiness = awardReadiness(score, ratedCount);
 
   return {
     percent: Math.round(score),
-    summary: `${ratedCount} of ${AWARD_CRITERIA.length} criteria rated · weighted total ${score.toFixed(1)} / 100`,
+    summary: `${ratedCount} of ${AWARD_CRITERIA.length} criteria assessed · ${Math.round(score)} of 100 points`,
     recommendations: buildAwardRecommendations(state),
-    points: field === "rating" ? Math.round(((Number(value) || 0) / 5) * (AWARD_CRITERIA.find(criterion => criterion.id === id)?.weight || 0)) : null
+    status: readiness.label,
+    statusDetail: readiness.detail,
+    points: field === "rating" ? String(awardCriterionPoints(state, AWARD_CRITERIA.find(criterion => criterion.id === id) || { id: "", weight: 0 })) : null
   };
 }
 
@@ -1864,16 +2022,17 @@ export function setAuthFeedback(message, type = "error") {
 
 export function setPublishedWorks(rows) {
   const presentation = {
-    Article: { kind: "article", icon: "✎", image: assetPaths.article, imageAlt: "Article preview" },
-    Poetry: { kind: "poetry", icon: "❝", image: assetPaths.poetry, imageAlt: "Poetry preview" },
-    Calligraphy: { kind: "calligraphy", icon: "۞", image: assetPaths.calligraphy, imageAlt: "Calligraphy preview" },
-    Magazine: { kind: "magazine", icon: "▤", image: assetPaths.magazine, imageAlt: "Magazine preview" },
-    Art: { kind: "art", icon: "🎨", image: assetPaths.calligraphy, imageAlt: "Art preview" },
-    Project: { kind: "project", icon: "⚙", image: assetPaths.event, imageAlt: "Project preview" },
-    Code: { kind: "code", icon: "💻", image: assetPaths.event, imageAlt: "Code preview" }
+    Article: { kind: "article", image: assetPaths.article, imageAlt: "Article preview" },
+    Poetry: { kind: "poetry", image: assetPaths.poetry, imageAlt: "Poetry preview" },
+    Calligraphy: { kind: "calligraphy", image: assetPaths.calligraphy, imageAlt: "Calligraphy preview" },
+    Magazine: { kind: "magazine", image: assetPaths.magazine, imageAlt: "Magazine preview" },
+    Art: { kind: "art", image: assetPaths.calligraphy, imageAlt: "Art preview" },
+    Project: { kind: "project", image: assetPaths.event, imageAlt: "Project preview" },
+    Code: { kind: "code", image: assetPaths.event, imageAlt: "Code preview" }
   };
   publishedWorks = (rows || []).map(row => ({
     id: row.id,
+    user_id: row.user_id,
     title: row.title,
     author: row.author_name,
     type: row.work_type,
@@ -1900,19 +2059,21 @@ export function setPortalWings(rows) {
     ...item,
     wingName: portalWings.find(w => w.id === item.wing_id)?.name || null
   }));
-  if (["home", "wings", "admin", "account"].includes(getActiveRoute())) renderRoute();
+  if (["home", "wings", "admin", "account", "programs"].includes(getActiveRoute())) renderRoute();
 }
 
 export function setPortalMembers(rows) {
   if (!rows) {
-    portalMembers = null;
-    if (getActiveRoute() === "members") renderRoute();
+    portalMembers = [];
+    setMonthlyFundDirectory([]);
+    if (["members", "core", "works", "home", "programs", "finance"].includes(getActiveRoute())) renderRoute();
     return;
   }
   portalMembers = rows.map(row => {
-    const name = row.display_name || "ADAB Student";
+    const name = row.display_name || "Student";
     return {
       id: row.id,
+      role: row.role,
       name,
       initials: name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
       roll: row.roll_number || row.id,
@@ -1922,7 +2083,8 @@ export function setPortalMembers(rows) {
       skills: []
     };
   });
-  if (getActiveRoute() === "members") renderRoute();
+  setMonthlyFundDirectory(portalMembers);
+  if (["members", "core", "works", "home", "programs", "finance", "account"].includes(getActiveRoute())) renderRoute();
 }
 
 export function setPortalEvents(rows) {
@@ -1934,7 +2096,15 @@ export function setPortalEvents(rows) {
     image: assetPaths.event,
     imageAlt: "Illustrated ADAB event artwork"
   }));
-  if (["home", "events"].includes(getActiveRoute())) renderRoute();
+  if (["home", "events", "programs"].includes(getActiveRoute())) renderRoute();
+}
+
+export function setProgramPosters(rows) {
+  programPosters = (rows || []).map(poster => ({
+    ...poster,
+    poster_url: poster.poster_url || null
+  }));
+  if (getActiveRoute() === "programs") renderRoute();
 }
 
 export function setAnnouncements(rows) {
@@ -1948,6 +2118,12 @@ export function setAnnouncements(rows) {
 export function setFinanceEntries(rows, loading = false) {
   financeEntries = rows || [];
   financeLoading = loading;
+  if (getActiveRoute() === "finance") renderRoute();
+}
+
+export function setBudgetAllocations(rows, loading = false) {
+  budgetAllocations = rows || [];
+  budgetLoading = loading;
   if (getActiveRoute() === "finance") renderRoute();
 }
 
@@ -1975,7 +2151,19 @@ export function setAdminActiveTab(tab) {
 export function setFinanceFilter(type, search = "") {
   financeFilterType = type;
   financeSearchQuery = search;
-  if (getActiveRoute() === "finance") renderRoute();
+  if (getActiveRoute() !== "finance") return;
+  const activeElement = document.activeElement;
+  const selectionStart = activeElement instanceof HTMLInputElement
+    ? activeElement.selectionStart
+    : null;
+  renderRoute();
+  if (activeElement?.id === "ledger-search") {
+    const searchInput = document.querySelector("#ledger-search");
+    searchInput?.focus();
+    if (searchInput instanceof HTMLInputElement && selectionStart !== null) {
+      searchInput.setSelectionRange(selectionStart, selectionStart);
+    }
+  }
 }
 
 export function setContentCategory(cat) {

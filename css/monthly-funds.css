@@ -1,322 +1,359 @@
 /* ============================================================================
-   ADAB CLASS UNION — EXECUTIVE GLASSMORPHISM FINANCE TABLE OVERHAUL
+   ADAB CLASS UNION — INSTITUTIONAL FINANCE LEDGER
+   Clean paper, hairline rules, tabular figures. No glass, no glow.
    ============================================================================ */
 
-.monthly-fund-wrapper {
-  margin-top: 50px;
-  animation: fadeIn 350ms cubic-bezier(0.16, 1, 0.3, 1);
-}
+.monthly-fund-wrapper { margin-top: 48px; }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* ---- Treasurer controls -------------------------------------------------- */
 .treasurer-control-card {
-  margin-bottom: 30px;
+  margin-bottom: 28px;
+  padding: 20px 22px;
   border: 1px solid var(--border-color);
-  border-radius: 24px;
-  background: linear-gradient(135deg, var(--bg-card) 0%, color-mix(in srgb, var(--red-light) 25%, var(--bg-card)) 100%);
-  box-shadow: 0 10px 30px -10px rgb(153 27 27 / 8%);
-  backdrop-filter: blur(8px);
+  border-radius: var(--radius);
+  background: var(--bg-card);
 }
 
 .treasurer-control-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.6fr;
+  grid-template-columns: 1fr 1fr 1.4fr;
   gap: 22px;
-  align-items: center;
+  align-items: end;
+}
+
+.treasurer-control-grid label,
+.treasurer-control-card .form-field > label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
 .treasurer-select,
 .treasurer-control-card input {
   width: 100%;
-  min-height: 50px;
-  padding: 0 16px;
-  border: 1.5px solid var(--border-color);
-  border-radius: 14px;
-  background: var(--bg-main);
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
   color: var(--text-main);
-  font-weight: 600;
-  font-size: .95rem;
+  font-size: .9rem;
+  font-weight: 500;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.treasurer-select:focus,
+.treasurer-control-card input:focus {
+  border-color: var(--red-primary);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--red-primary);
 }
 
 .treasurer-apply-action { display: flex; flex-direction: column; justify-content: flex-end; }
-.treasurer-apply-action .button {
-  width: 100%;
-  min-height: 50px;
-  border-radius: 14px;
-  font-weight: 750;
-  box-shadow: 0 4px 14px rgb(220 38 38 / 25%);
-}
+.treasurer-apply-action .button { width: 100%; min-height: 42px; }
 
+.treasurer-quick-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border-color); }
+.treasurer-quick-actions .button { min-height: 38px; font-size: .8rem; }
+
+/* ---- Summary metrics ----------------------------------------------------- */
 .monthly-metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 40px;
+  gap: 1px;
+  margin-bottom: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--border-color);
+  overflow: hidden;
 }
 
 .monthly-metrics-grid .finance-stat-card {
-  padding: 24px;
-  border: 1.5px solid var(--border-color);
-  border-radius: 20px;
+  padding: 20px 22px;
+  border: 0;
+  border-radius: 0;
   background: var(--bg-card);
-  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
 }
 
-/* ============================================================================
-   1. EXECUTIVE GLASSMORPHISM TABLE CONTAINER & SURFACE
-   ============================================================================ */
-.student-roster-glass-card {
-  overflow-x: auto;
-  border-radius: 24px;
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-  margin-top: 20px;
-}
-
-.student-roster-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  color: #f3f4f6;
-  font-size: 0.92rem;
-}
-
-/* Header Aesthetics */
-.student-roster-table thead th {
-  background: rgba(153, 27, 27, 0.35);
-  backdrop-filter: blur(8px);
-  color: #9ca3af;
-  font-size: 0.75rem;
-  font-weight: 800;
+.finance-stat-card .stat-subtitle,
+.finance-stat-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-subtle);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 1.1rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.finance-stat-card strong,
+.finance-stat-card .stat-accent {
+  display: block;
+  color: var(--text-main);
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.stat-red, .stat-green, .stat-accent { color: var(--text-main); }
+
+/* ---- Ledger table -------------------------------------------------------- */
+.student-roster-glass-card,
+.ledger-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  margin-top: 18px;
+}
+
+.student-roster-table,
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-main);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.student-roster-table thead th,
+.ledger-table thead th {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   text-align: left;
   white-space: nowrap;
 }
 
-/* ============================================================================
-   2. ROW & MICRO-INTERACTION ENHANCEMENTS
-   ============================================================================ */
-.student-roster-table tbody tr {
-  transition: all 0.2s ease;
-}
+.student-roster-table tbody tr,
+.ledger-table tbody tr { border-bottom: 1px solid var(--border-color); transition: background var(--transition); }
+.student-roster-table tbody tr:last-child,
+.ledger-table tbody tr:last-child { border-bottom: 0; }
+.student-roster-table tbody tr:hover,
+.ledger-table tbody tr:hover { background: var(--bg-inset); }
 
-/* Alternating Row Shading */
-.student-roster-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-/* Hover Transitions & Red Highlight */
-.student-roster-table tbody tr:hover {
-  background: rgba(220, 38, 38, 0.06);
-  border-left: 3px solid #dc2626;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.student-roster-table td {
-  padding: 1rem 1.25rem;
+.student-roster-table td,
+.ledger-table td {
+  padding: 14px 16px;
   vertical-align: middle;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
+  font-size: .86rem;
 }
+.student-roster-table tbody tr:last-child td,
+.ledger-table tbody tr:last-child td { border-bottom: 0; }
 
-/* Student Profile Avatar Ring */
-.student-roster-identity {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+.student-roster-table td:nth-child(3),
+.student-roster-table td:nth-child(4),
+.student-roster-table td:nth-child(5),
+.student-roster-table th:nth-child(3),
+.student-roster-table th:nth-child(4),
+.student-roster-table th:nth-child(5) { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---- Identity cell ------------------------------------------------------- */
+.student-roster-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .student-avatar-ring {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 2px solid;
   display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 0.85rem;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-inset) !important;
+  color: var(--text-main) !important;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .03em;
 }
 .student-roster-identity strong {
-  font-size: 0.98rem;
-  color: #ffffff;
-  letter-spacing: -0.01em;
+  display: block;
+  color: var(--text-main);
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
 }
-.student-roster-identity small {
-  color: #9ca3af;
-  font-size: 0.78rem;
-}
+.student-roster-identity small { display: block; color: var(--text-subtle); font-size: .72rem; line-height: 1.35; }
 
-/* ============================================================================
-   3. INPUTS, BADGES & ACTION BUTTONS
-   ============================================================================ */
-.numeric-due { color: #d1d5db; font-weight: 600; }
-.numeric-total-due { color: #ffffff; font-weight: 800; font-size: 1.05rem; }
+/* ---- Figures ------------------------------------------------------------- */
+.numeric-due { color: var(--text-main); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.numeric-total-due { color: var(--text-main); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* Amount Paid Input Field */
+/* ---- Amount paid field --------------------------------------------------- */
 .amount-paid-input-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  background: rgba(11, 15, 25, 0.85);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-  transition: all 180ms ease;
+  gap: 3px;
+  max-width: 118px;
+  padding: 0 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 .amount-paid-input-wrapper:focus-within {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+  border-color: var(--red-primary);
+  box-shadow: 0 0 0 1px var(--red-primary);
 }
-.amount-paid-input-wrapper span { font-weight: 750; color: #9ca3af; font-size: .95rem; }
+.amount-paid-input-wrapper span { color: var(--text-subtle); font-size: .82rem; }
 .student-paid-input {
-  width: 76px;
-  border: none;
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
   background: transparent;
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: 750;
+  color: var(--text-main);
+  font-size: .86rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 .student-paid-input:focus { outline: none; }
+.student-paid-input:disabled { color: var(--text-muted); }
 
-/* Dynamic Status Pills */
-.badge-pill-paid {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: .75rem;
-  letter-spacing: .06em;
-  display: inline-block;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
-}
-
-.badge-pill-pending {
-  background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: .75rem;
-  letter-spacing: .06em;
-  display: inline-block;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
-}
-
+/* ---- Status markers ------------------------------------------------------ */
+.badge-pill-paid,
+.badge-pill-pending,
 .badge-pill-partial {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: .75rem;
-  letter-spacing: .06em;
-  display: inline-block;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
-}
-
-/* Action Buttons */
-.roster-action-cell { display: flex; gap: 8px; align-items: center; }
-
-/* Solid Primary Red Save Button */
-.button-save-payment-modern {
-  min-height: 38px;
-  padding: 0 18px;
-  border-radius: 10px;
-  font-size: .82rem;
-  font-weight: 750;
-  background: #dc2626;
-  color: #ffffff;
-  border: 1px solid #ef4444;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-  transition: all 180ms ease;
-}
-.button-save-payment-modern:hover {
-  background: #ef4444;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
-}
-.button-save-payment-modern:active {
-  transform: scale(0.95);
-}
-
-/* Clean Ghost / Text Link Statement Button */
-.btn-statement-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid currentcolor;
+  border-radius: var(--radius-sm);
   background: transparent;
-  border: none;
-  color: #93c5fd;
-  font-size: 0.85rem;
-  font-weight: 650;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge-pill-paid { color: #15803d; }
+.badge-pill-partial { color: #b45309; }
+.badge-pill-pending { color: var(--red-dark); }
+
+/* ---- Row actions --------------------------------------------------------- */
+.roster-action-cell { display: flex; gap: 6px; align-items: center; }
+
+.button-save-payment-modern {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--red-primary);
+  border-radius: var(--radius-sm);
+  background: var(--red-primary);
+  color: #fff;
   cursor: pointer;
+  font-size: .74rem;
+  font-weight: 650;
+  letter-spacing: .04em;
+  transition: background var(--transition), border-color var(--transition);
+}
+.button-save-payment-modern:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+.btn-statement-ghost {
   padding: 4px 0;
-  transition: color 150ms ease, text-decoration 150ms ease;
-}
-.btn-statement-ghost:hover {
-  color: #bfdbfe;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 600;
   text-decoration: underline;
+  text-decoration-color: var(--border-strong);
   text-underline-offset: 3px;
+  white-space: nowrap;
 }
+.btn-statement-ghost:hover { color: var(--red-dark); text-decoration-color: var(--red-dark); }
 
 .button-whatsapp-notice {
-  min-height: 38px;
-  width: 38px;
-  padding: 0;
-  border-radius: 10px;
-  display: inline-grid;
-  place-items: center;
-  font-size: 1.05rem;
-  border-color: #25d366;
-  background: rgba(37, 211, 102, 0.15);
-  color: #25d366;
-  transition: all 180ms ease;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: .7rem;
+  font-weight: 650;
+  letter-spacing: .04em;
 }
-.button-whatsapp-notice:hover {
-  background: #25d366;
-  color: #fff;
-  border-color: #25d366;
-}
+.button-whatsapp-notice:hover { border-color: var(--text-main); color: var(--text-main); background: var(--bg-inset); }
 
-.roster-filter-row { display: flex; gap: 12px; align-items: center; }
+/* ---- Filters ------------------------------------------------------------- */
+.roster-filter-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .roster-search-input {
-  min-height: 46px;
-  min-width: 280px;
-  padding: 0 16px;
-  border: 1.5px solid var(--border-color);
-  border-radius: 14px;
+  min-height: 40px;
+  min-width: 260px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--text-main);
-  font-size: .92rem;
+  font-size: .86rem;
 }
-.roster-search-input:focus {
-  border-color: var(--red-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red-primary) 18%, transparent);
-  outline: none;
+.roster-search-input:focus { border-color: var(--red-primary); outline: none; box-shadow: 0 0 0 1px var(--red-primary); }
+
+/* ---- Progress bars (budget / completion) --------------------------------- */
+.budget-progress-track,
+.completion-bar-wrapper {
+  overflow: hidden;
+  height: 6px;
+  border-radius: 0;
+  background: var(--bg-inset);
+}
+.budget-progress-bar {
+  height: 100%;
+  background: var(--red-primary);
+  transition: width 300ms ease;
 }
 
-.statement-modal-body { padding: 12px; }
-.statement-modal-body h2 { margin: 10px 0 4px; font-size: 1.4rem; letter-spacing: -.02em; }
-.statement-modal-body p { margin: 0; color: var(--text-muted); font-size: .9rem; }
+/* ---- Statement modal ----------------------------------------------------- */
+.statement-modal-body { padding: 4px; }
+.statement-modal-body h2 { margin: 8px 0 4px; font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; }
+.statement-modal-body p { margin: 0; color: var(--text-muted); font-size: .86rem; }
+
+/* ---- Other-financials portal -------------------------------------------- */
+.other-financials-portal { margin-top: 40px; }
+.card-deck { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.card-header { padding: 18px 20px; border-bottom: 1px solid var(--border-color); }
+.form-text-muted { color: var(--text-muted); font-size: .78rem; }
+.donation-table-scroll { width: 100%; overflow-x: auto; margin: 16px 0; }
+.donation-ledger-table { width: 100%; min-width: 640px; border-collapse: collapse; color: #fff; }
+.donation-ledger-table th,
+.donation-ledger-table td { padding: 8px; border-bottom: 1px solid #334155; text-align: left; }
+.donation-ledger-table th { background: #3b82f6; color: #fff; font-size: .74rem; white-space: nowrap; }
+.donation-ledger-table td { background: #0f172a; font-size: .82rem; }
+.donation-status { display: inline-flex; padding: 4px 8px; border-radius: 10px; font-size: .72rem; font-weight: 600; text-transform: uppercase; }
+.donation-status-cleared { background: #10b981; color: #fff; }
+.donation-status-partial { background: #f59e0b; color: #78350f; }
+.donation-status-pending { background: #ef4444; color: #fff; }
+.debt-record { margin: 4px 0; padding: 8px; border-left: 3px solid; border-radius: 6px; background: #0f172a; color: #fff; }
+.debt-record-cleared { border-left-color: #10b981; }
+.debt-record-partial { border-left-color: #f59e0b; }
+.debt-record-pending { border-left-color: #ef4444; }
+.debt-record-header,
+.debt-record-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.debt-record-header > span:first-child { overflow-wrap: anywhere; }
+.debt-record-amount { flex: 0 0 auto; font-size: .72rem; white-space: nowrap; }
+.debt-record-footer { margin-top: 4px; opacity: .8; }
+.debt-record-status { font-size: .68rem; font-weight: 700; text-transform: uppercase; }
+.debt-record-footer small { font-size: .72rem; }
 
 @media (max-width: 1200px) {
   .monthly-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) {
   .treasurer-control-grid { grid-template-columns: 1fr; }
+  .card-deck { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
   .monthly-metrics-grid { grid-template-columns: 1fr; }

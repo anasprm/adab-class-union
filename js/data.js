@@ -24,12 +24,12 @@ export const achievementRecords = [];
 
 // --- Pre-defined avatar options for quick selection ---
 export const avatarOptions = [
-  { id: "avatar-1", icon: "📚", label: "Student", color: "#DC2626" },
-  { id: "avatar-2", icon: "🏆", label: "Achiever", color: "#991B1B" },
-  { id: "avatar-3", icon: "🔬", label: "Science", color: "#3B82F6" },
-  { id: "avatar-4", icon: "⚽", label: "Sports", color: "#10B981" },
-  { id: "avatar-5", icon: "🎨", label: "Art", color: "#F59E0B" },
-  { id: "avatar-6", icon: "📝", label: "Literary", color: "#8B5CF6" }
+  { id: "avatar-1", icon: "ST", label: "Student", color: "#DC2626" },
+  { id: "avatar-2", icon: "AC", label: "Achiever", color: "#991B1B" },
+  { id: "avatar-3", icon: "SC", label: "Science", color: "#3B82F6" },
+  { id: "avatar-4", icon: "SP", label: "Sports", color: "#10B981" },
+  { id: "avatar-5", icon: "AR", label: "Art", color: "#F59E0B" },
+  { id: "avatar-6", icon: "LT", label: "Literary", color: "#8B5CF6" }
 ];
 
 export const rolesAllowedToReview = ["developer", "teacher", "committee"];
@@ -49,7 +49,7 @@ export const wings = [
   {
     id: "ethics",
     name: "Arabic Wing",
-    icon: "📜",
+    icon: "AR",
     accent: "Arabic",
     objective: "Celebrate the rich heritage of Arabic language and literature through melodious recitation, masterclass calligraphy workshops, and expressive spoken-word programmes.",
     activities: [
@@ -61,7 +61,7 @@ export const wings = [
   {
     id: "arts",
     name: "English Wing",
-    icon: "🎭",
+    icon: "EN",
     accent: "English",
     objective: "Cultivate eloquence, confidence, and linguistic mastery in English through engaging public speaking, creative essay writing, and dramatic stage performances.",
     activities: [
@@ -73,7 +73,7 @@ export const wings = [
   {
     id: "literary",
     name: "Library Wing",
-    icon: "📖",
+    icon: "LB",
     accent: "Library",
     objective: "Foster a lifelong passion for reading by maintaining a vibrant class library, hosting intellectual book circles, and curating peaceful study sanctuaries.",
     activities: [
@@ -85,7 +85,7 @@ export const wings = [
   {
     id: "media",
     name: "Malayalam Wing",
-    icon: "🌴",
+    icon: "ML",
     accent: "Malayalam",
     objective: "Honour our mother tongue through classical Malayalam poetry recitation, captivating storytelling evenings, and deep explorations of regional literature.",
     activities: [
@@ -97,7 +97,7 @@ export const wings = [
   {
     id: "pkv",
     name: "PKV",
-    icon: "🎯",
+    icon: "PKV",
     accent: "PKV",
     objective: "Drive specialized PKV student development initiatives, collaborative peer learning pods, and inclusive class-wide engagement across all union activities.",
     activities: [
@@ -109,7 +109,7 @@ export const wings = [
   {
     id: "tech",
     name: "Science Wing",
-    icon: "🔬",
+    icon: "SC",
     accent: "Science",
     objective: "Ignite scientific curiosity and empirical inquiry through hands-on laboratory experiments, interactive science exhibitions, and astronomy stargazing nights.",
     activities: [
@@ -121,7 +121,7 @@ export const wings = [
   {
     id: "sports",
     name: "Sports & Athletics Club",
-    icon: "⚽",
+    icon: "SP",
     accent: "Teamwork",
     objective: "Champion physical wellness, sportsmanship, and vigorous inter-house competition through well-organized athletic leagues and fitness programmes.",
     activities: [
@@ -133,7 +133,7 @@ export const wings = [
   {
     id: "social",
     name: "Urdu Wing",
-    icon: "✒️",
+    icon: "UR",
     accent: "Urdu",
     objective: "Promote the elegance of Urdu poetry, prose, and literary culture through mushairas, fine script calligraphy, and expressive linguistic dialogues.",
     activities: [
@@ -193,7 +193,6 @@ export const creativeWorks = [
     kind: "article",
     author: "Amina Zoya",
     date: "October 2026",
-    icon: "✎",
     image: assetPaths.article,
     imageAlt: "Illustrated open notebook and a red pencil",
     excerpt: "A reflection on how small acts of kindness make a class feel more like a community.",
@@ -206,7 +205,6 @@ export const creativeWorks = [
     kind: "poetry",
     author: "Safa Mariyam",
     date: "September 2026",
-    icon: "❝",
     image: assetPaths.poetry,
     imageAlt: "Illustrated rainy morning with a soft crimson sunrise",
     excerpt: "A short poem about the hush that follows a rain-washed morning.",
@@ -219,7 +217,6 @@ export const creativeWorks = [
     kind: "calligraphy",
     author: "Hiba Nasrin",
     date: "September 2026",
-    icon: "۞",
     image: assetPaths.calligraphy,
     imageAlt: "Original abstract calligraphy-inspired floral line art",
     excerpt: "A student calligraphy study exploring balance, patience, and geometrical rhythm.",
@@ -232,7 +229,6 @@ export const creativeWorks = [
     kind: "code",
     author: "Yahya Niyas",
     date: "October 2026",
-    icon: "💻",
     image: assetPaths.event,
     imageAlt: "Code engine preview",
     excerpt: "A responsive client-side quiz application built with vanilla JavaScript for inter-house academic battles.",
@@ -258,7 +254,6 @@ export function startTimer(seconds, onTick, onComplete) {
     kind: "project",
     author: "Yahya Niyas & Liyana Noor",
     date: "October 2026",
-    icon: "⚙",
     image: assetPaths.event,
     imageAlt: "Solar tracker engineering model",
     excerpt: "Working prototype using Arduino and light-dependent resistors to maximize photovoltaic efficiency.",
@@ -272,7 +267,6 @@ export function startTimer(seconds, onTick, onComplete) {
     kind: "art",
     author: "Hiba Nasrin",
     date: "September 2026",
-    icon: "🎨",
     image: assetPaths.calligraphy,
     imageAlt: "Digital painting of campus horizons",
     excerpt: "A digital landscape painting depicting our Plus One campus under the crimson evening sun.",
@@ -285,7 +279,6 @@ export function startTimer(seconds, onTick, onComplete) {
     kind: "magazine",
     author: "Editorial Team",
     date: "August 2026",
-    icon: "▤",
     image: assetPaths.magazine,
     imageAlt: "Illustrated cover of the first ADAB class magazine",
     excerpt: "The first collection of student writing, artwork, interviews, and class memories.",

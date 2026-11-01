@@ -10,13 +10,16 @@ import {
   setAdminActiveTab,
   setAdminProfiles,
   setAnnouncements,
+  setBudgetAllocations,
   setAuthFeedback,
   setAuthMode,
   setCurrentProfile,
   setCurrentUser,
   setFinanceEntries,
+  setFinanceFilter,
   setLastCreatedAccount,
   setPortalEvents,
+  setProgramPosters,
   setPortalMembers,
   setPortalWings,
   setPublishedWorks,
@@ -32,6 +35,7 @@ import { initializeCountdown } from "./countdown.js";
 import {
   initializeModals,
   setPortalEvents as setModalPortalEvents,
+  setProgramPosters as setModalProgramPosters,
   setPortalMembers as setModalPortalMembers,
   setPublishedWorks as setModalPublishedWorks
 } from "./modals.js";
@@ -48,8 +52,10 @@ let publishedWorksLoaded = false;
 let portalWingsLoaded = false;
 let portalMembersLoaded = false;
 let portalEventsLoaded = false;
+let programPostersLoaded = false;
 let announcementsLoaded = false;
 let financeLoaded = false;
+let budgetLoaded = false;
 let adminProfilesLoaded = false;
 let reviewDataLoaded = false;
 let currentProfileRequest;
@@ -60,7 +66,6 @@ function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   const isDark = theme === "dark";
   themeButton.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
-  themeButton.querySelector(".theme-icon").textContent = isDark ? "☀" : "☾";
   themeButton.querySelector(".theme-label").textContent = isDark ? "Light mode" : "Dark mode";
 }
 
@@ -83,14 +88,42 @@ function showToast(message, type = "success") {
 
 function updateAwardSummary(result) {
   if (!result) return;
+
   const scoreNode = document.querySelector("[data-award-score]");
+  if (scoreNode) {
+    scoreNode.replaceChildren(
+      document.createTextNode(String(result.percent)),
+      Object.assign(document.createElement("small"), { textContent: "/100" })
+    );
+  }
+
+  const barNode = document.querySelector("[data-award-bar]");
+  if (barNode) barNode.style.width = `${result.percent}%`;
+
+  const totalNode = document.querySelector("[data-award-total]");
+  if (totalNode) {
+    totalNode.replaceChildren(
+      document.createTextNode(String(result.percent)),
+      Object.assign(document.createElement("small"), { textContent: "/100" })
+    );
+  }
+
   const summaryNode = document.querySelector("[data-award-summary]");
-  const listNode = document.querySelector("[data-award-recommendations]");
-  if (scoreNode) scoreNode.textContent = `${result.percent}%`;
   if (summaryNode) summaryNode.textContent = result.summary;
+
+  const statusNode = document.querySelector("[data-award-status]");
+  if (statusNode && result.status) {
+    statusNode.dataset.state = result.status.toLowerCase().replaceAll(" ", "-");
+    const labelNode = statusNode.querySelector("[data-award-status-label]");
+    if (labelNode) labelNode.textContent = result.status;
+    const detailNode = statusNode.querySelector(".award-status-detail");
+    if (detailNode) detailNode.textContent = result.statusDetail;
+  }
+
+  const listNode = document.querySelector("[data-award-recommendations]");
   if (listNode) {
     listNode.replaceChildren(...result.recommendations.map(item => {
-      const entry = document.createElement("li");
+      const entry = document.createElement("p");
       entry.textContent = item;
       return entry;
     }));
@@ -170,14 +203,38 @@ async function loadPortalEvents() {
   setPortalEvents(rows);
 }
 
+async function loadProgramPosters() {
+  if (!supabase || programPostersLoaded) return;
+  programPostersLoaded = true;
+  const { data, error } = await supabase.from("program_posters")
+    .select("id,title,category,starts_at,time_label,venue,description,wing_id,poster_path,video_path,first_prize,second_prize,third_prize,created_by")
+    .eq("is_published", true)
+    .order("starts_at", { ascending: false });
+  if (error) {
+    programPostersLoaded = false;
+    showDatabaseError("Loading program posters", error);
+    return;
+  }
+  const posters = (data || []).map(poster => ({
+    ...poster,
+    poster_url: poster.poster_path
+      ? supabase.storage.from("program-posters").getPublicUrl(poster.poster_path).data.publicUrl
+      : null,
+    video_url: poster.video_path
+      ? supabase.storage.from("program-posters").getPublicUrl(poster.video_path).data.publicUrl
+      : null
+  }));
+  setProgramPosters(posters);
+  setModalProgramPosters(posters);
+}
+
 async function loadPortalMembers() {
-  if (!supabase || !currentProfile || portalMembersLoaded) return;
+  if (!supabase || portalMembersLoaded) return;
   portalMembersLoaded = true;
-  const { data, error } = await supabase.from("member_directory")
-    .select("id,display_name,roll_number,house_team,district")
+  const { data, error } = await supabase.from("portal_people_directory")
+    .select("id,display_name,role,roll_number,house_team,district,bio")
     .order("display_name");
   if (error) {
-    portalMembersLoaded = false;
     showDatabaseError("Loading the class directory", error);
     return;
   }
@@ -208,7 +265,7 @@ async function loadFinanceEntries() {
   financeLoaded = true;
   setFinanceEntries([], true);
   const { data, error } = await supabase.from("finance_entries")
-    .select("id,entry_type,amount,category,description,occurred_on,attachment_path,created_at")
+    .select("id,entry_type,amount,category,description,occurred_on,attachment_path,created_by,created_at")
     .order("occurred_on", { ascending: false });
   if (error) {
     financeLoaded = false;
@@ -217,6 +274,23 @@ async function loadFinanceEntries() {
     return;
   }
   setFinanceEntries(data || [], false);
+}
+
+async function loadBudgetAllocations() {
+  if (!supabase || !currentProfile || budgetLoaded) return false;
+  budgetLoaded = true;
+  setBudgetAllocations([], true);
+  const { data, error } = await supabase.from("budget_allocations")
+    .select("id,category,allocated_amount,description")
+    .order("category");
+  if (error) {
+    budgetLoaded = true;
+    setBudgetAllocations([], false);
+    showDatabaseError("Loading category budgets", error);
+    return false;
+  }
+  setBudgetAllocations(data || [], false);
+  return true;
 }
 
 async function loadAdminProfiles() {
@@ -240,7 +314,7 @@ async function loadReviewData() {
   reviewDataLoaded = true;
   const [works, suggestions] = await Promise.all([
     supabase.from("creative_submissions")
-      .select("id,title,author_name,work_type,excerpt,content,created_at,attachment_path")
+      .select("id,user_id,title,author_name,work_type,excerpt,content,created_at,attachment_path")
       .eq("status", "pending")
       .order("created_at", { ascending: true }),
     supabase.from("suggestions")
@@ -253,9 +327,25 @@ async function loadReviewData() {
     showDatabaseError("Loading council review items", works.error || suggestions.error);
     return;
   }
-  setReviewData(works.data || [], (suggestions.data || []).map(item => ({
+  const identityIds = [...new Set([
+    ...(works.data || []).map(item => item.user_id),
+    ...(suggestions.data || []).map(item => item.user_id)
+  ].filter(Boolean))];
+  const identities = identityIds.length
+    ? await supabase.from("portal_people_directory").select("id,display_name").in("id", identityIds)
+    : { data: [], error: null };
+  if (identities.error) {
+    reviewDataLoaded = false;
+    showDatabaseError("Loading account names for council review", identities.error);
+    return;
+  }
+  const namesById = new Map((identities.data || []).map(item => [item.id, item.display_name]));
+  setReviewData((works.data || []).map(item => ({
     ...item,
-    email: `Member ${item.user_id.slice(0, 8)}`
+    author_name: namesById.get(item.user_id) || "Student contributor"
+  })), (suggestions.data || []).map(item => ({
+    ...item,
+    email: namesById.get(item.user_id) || "Student account"
   })));
 }
 
@@ -298,6 +388,16 @@ nav.addEventListener("click", event => {
 
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") closeNavigation();
+  const programTab = event.target instanceof Element ? event.target.closest("[data-program-tab]") : null;
+  if (!programTab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  const tabs = [...programTab.closest('[role="tablist"]').querySelectorAll("[data-program-tab]")];
+  const currentIndex = tabs.indexOf(programTab);
+  const nextIndex = event.key === "Home" ? 0
+    : event.key === "End" ? tabs.length - 1
+      : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+  event.preventDefault();
+  tabs[nextIndex].focus();
+  tabs[nextIndex].click();
 });
 
 document.addEventListener("click", event => {
@@ -479,8 +579,7 @@ document.addEventListener("click", event => {
       currentLikes = isLiked ? currentLikes + 1 : currentLikes - 1;
       countSpan.textContent = String(currentLikes);
     }
-    likeBtn.innerHTML = isLiked ? `♥ <span class="like-count">${countSpan?.textContent || "42"}</span>` : `♡ <span class="like-count">${countSpan?.textContent || "42"}</span>`;
-    showToast(isLiked ? "Liked post!" : "Unliked post.");
+    showToast(isLiked ? "Post liked." : "Like removed.");
     return;
   }
 
@@ -500,10 +599,47 @@ document.addEventListener("click", event => {
 
   const flipBtn = event.target instanceof Element ? event.target.closest("[data-action='flip-card']") : null;
   if (flipBtn) {
-    const postCard = flipBtn.closest(".ig-post-card");
+    const postCard = flipBtn.closest(".program-card, .ig-post-card");
     if (postCard) {
-      postCard.classList.toggle("is-flipped");
+      const flipped = postCard.classList.toggle("is-flipped");
+      postCard.classList.toggle("flipped", flipped);
     }
+    return;
+  }
+
+  const programTab = event.target instanceof Element ? event.target.closest("[data-program-tab]") : null;
+  if (programTab) {
+    const page = programTab.closest(".programs-page");
+    const selectedKind = programTab.dataset.programTab;
+    if (!page || !selectedKind) return;
+    page.querySelectorAll("[data-program-tab]").forEach(tab => {
+      const selected = tab === programTab;
+      tab.classList.toggle("is-active", selected);
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    page.querySelectorAll("[data-program-panel]").forEach(panel => {
+      panel.hidden = panel.dataset.programPanel !== selectedKind;
+    });
+    const mediaInput = page.querySelector("#program-media");
+    const mediaKindInput = page.querySelector("#program-media-kind");
+    const mediaLabel = page.querySelector("#program-media-label");
+    const mediaHint = page.querySelector("#program-media-hint");
+    const publisherTitle = page.querySelector("#program-publisher-title");
+    const publisherLead = page.querySelector("#program-publisher-lead");
+    const publishButton = page.querySelector("#program-publish-button");
+    const isVideo = selectedKind === "video";
+    if (mediaInput) mediaInput.accept = isVideo ? "video/mp4,video/webm" : "image/jpeg,image/png,image/webp";
+    if (mediaKindInput) mediaKindInput.value = selectedKind;
+    if (mediaLabel) mediaLabel.textContent = isVideo ? "Video reel" : "Poster image";
+    if (mediaHint) mediaHint.textContent = isVideo
+      ? "Upload an MP4 or WebM video up to 50 MB."
+      : "Upload a JPEG, PNG, or WebP poster up to 10 MB.";
+    if (publisherTitle) publisherTitle.textContent = isVideo ? "Publish a video" : "Publish a poster";
+    if (publisherLead) publisherLead.textContent = isVideo
+      ? "Add a video reel and the recipients for 1st, 2nd, and 3rd prize."
+      : "Add a poster and the recipients for 1st, 2nd, and 3rd prize.";
+    if (publishButton) publishButton.textContent = isVideo ? "Publish video and results" : "Publish poster and results";
     return;
   }
 
@@ -563,6 +699,11 @@ document.addEventListener("submit", event => {
 
 document.addEventListener("change", event => {
   if (!(event.target instanceof HTMLSelectElement)) return;
+  if (event.target.id === "ledger-type-filter") {
+    const search = document.querySelector("#ledger-search");
+    setFinanceFilter(event.target.value, search instanceof HTMLInputElement ? search.value : "");
+    return;
+  }
   if (event.target.matches("#invite-role")) {
     const wingField = document.querySelector("#invite-wing-field");
     if (wingField) wingField.hidden = event.target.value !== "wing";
@@ -594,16 +735,25 @@ document.addEventListener("change", event => {
     value: ratingControl.value
   });
   updateAwardSummary(result);
-  const counter = ratingControl.closest("[data-award-card]")?.querySelector(".evidence-count");
-  if (counter) {
-    counter.textContent = Number(ratingControl.value) > 0
-      ? `Rated ${ratingControl.value}/5`
-      : "Not yet rated";
+  const row = ratingControl.closest("[data-award-row]");
+  const pointsCell = row?.querySelector("[data-award-points]");
+  if (pointsCell && result?.points != null) {
+    const weight = row.querySelector(".award-col-weight")?.textContent?.trim() || "";
+    pointsCell.replaceChildren(
+      document.createTextNode(String(result.points)),
+      Object.assign(document.createElement("small"), { textContent: `/${weight.replace("%", "")}` })
+    );
   }
 });
 
 document.addEventListener("input", event => {
-  const evidenceControl = event.target.closest("[data-award-evidence]");
+  const target = event.target;
+  if (target instanceof HTMLInputElement && target.id === "ledger-search") {
+    const filter = document.querySelector("#ledger-type-filter");
+    setFinanceFilter(filter instanceof HTMLSelectElement ? filter.value : "all", target.value);
+    return;
+  }
+  const evidenceControl = target instanceof Element ? target.closest("[data-award-evidence]") : null;
   if (!evidenceControl) return;
   applyAwardCheckpointChange({
     field: "evidence",
@@ -622,6 +772,46 @@ document.addEventListener("click", event => {
 
 document.addEventListener("submit", event => {
   if (!(event.target instanceof HTMLFormElement)) return;
+  if (event.target.matches(".budget-edit-form")) {
+    event.preventDefault();
+    const form = event.target;
+    if (!currentProfile || !["developer", "treasurer"].includes(currentProfile.role)) return;
+    if (!form.reportValidity()) return;
+    if (!supabase) {
+      showToast("Supabase isn’t configured. The budget could not be saved.", "error");
+      return;
+    }
+
+    const category = form.dataset.budgetCategory || "";
+    const allocatedAmount = Number(new FormData(form).get("allocated_amount"));
+    if (!category || !Number.isFinite(allocatedAmount) || allocatedAmount < 0 || allocatedAmount > 9999999999.99) {
+      showToast("Enter a valid budget amount between ₹0 and ₹9,999,999,999.99.", "error");
+      return;
+    }
+
+    const saveButton = form.querySelector('button[type="submit"]');
+    if (saveButton) saveButton.disabled = true;
+    (async () => {
+      try {
+        const { error } = await supabase.from("budget_allocations").upsert({
+          category,
+          allocated_amount: allocatedAmount,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "category" });
+        if (error) {
+          showDatabaseError("Saving the category budget", error);
+          return;
+        }
+        budgetLoaded = false;
+        if (await loadBudgetAllocations()) showToast(`${category} budget updated.`);
+      } catch (error) {
+        showDatabaseError("Saving the category budget", error);
+      } finally {
+        if (saveButton?.isConnected) saveButton.disabled = false;
+      }
+    })();
+    return;
+  }
   if (event.target.id === "login-form") {
     event.preventDefault();
     if (!event.target.reportValidity()) return;
@@ -854,6 +1044,86 @@ document.addEventListener("submit", event => {
     }).catch(error => showDatabaseError("Publishing the announcement", error));
     return;
   }
+  if (event.target.id === "program-poster-form") {
+    event.preventDefault();
+    const allowedRoles = ["developer", "committee", "wing"];
+    if (!currentProfile?.is_active || !allowedRoles.includes(currentProfile.role)) {
+      showToast("Only active developer, core committee, and wing accounts can publish program posts.", "error");
+      return;
+    }
+    if (!event.target.reportValidity()) return;
+    if (!supabase) {
+      showToast("Program publishing is unavailable because Supabase is not configured.", "error");
+      return;
+    }
+    const form = event.target;
+    const formData = new FormData(form);
+    const prizeValues = ["first_prize", "second_prize", "third_prize"]
+      .map(field => String(formData.get(field) || "").trim());
+    if (prizeValues.some(value => !value)) {
+      showToast("Enter the recipients for all three prizes.", "error");
+      return;
+    }
+    const file = formData.get("media");
+    const expectedMediaKind = String(formData.get("media_kind") || "");
+    const publishPoster = async () => {
+      if (!(file instanceof File) || file.size === 0) {
+        showToast("Choose a poster image or video reel to publish.", "error");
+        return;
+      }
+      const imageTypes = ["image/jpeg", "image/png", "image/webp"];
+      const videoTypes = ["video/mp4", "video/webm"];
+      const isVideo = videoTypes.includes(file.type);
+      if (expectedMediaKind !== (isVideo ? "video" : "poster")) {
+        showToast(`Choose a ${expectedMediaKind === "video" ? "video reel" : "poster image"} for the selected tab.`, "error");
+        return;
+      }
+      if ((!isVideo && !imageTypes.includes(file.type))
+        || file.size > (isVideo ? 50 : 10) * 1024 * 1024) {
+        showToast("Choose a JPEG, PNG, or WebP poster up to 10 MB, or an MP4/WebM video up to 50 MB.", "error");
+        return;
+      }
+      const safeName = file.name.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100);
+      const mediaPath = `${currentProfile.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage.from("program-posters")
+        .upload(mediaPath, file, { contentType: file.type, upsert: false });
+      if (uploadError) {
+        showDatabaseError("Uploading program media", uploadError);
+        return;
+      }
+      const startsAt = new Date(String(formData.get("starts_at")));
+      const wingId = currentProfile.role === "wing"
+        ? currentProfile.wing_id
+        : String(formData.get("wing_id") || "") || null;
+      const { error } = await supabase.from("program_posters").insert({
+        title: String(formData.get("title")).trim(),
+        category: String(formData.get("category")).trim(),
+        starts_at: startsAt.toISOString(),
+        time_label: String(formData.get("time_label")).trim(),
+        venue: String(formData.get("venue")).trim(),
+        description: String(formData.get("description")).trim(),
+        wing_id: wingId,
+        poster_path: isVideo ? null : mediaPath,
+        video_path: isVideo ? mediaPath : null,
+        first_prize: prizeValues[0],
+        second_prize: prizeValues[1],
+        third_prize: prizeValues[2],
+        created_by: currentProfile.id
+      });
+      if (error) {
+        const { error: cleanupError } = await supabase.storage.from("program-posters").remove([mediaPath]);
+        if (cleanupError) console.error("Could not remove unpublished program media.", cleanupError);
+        showDatabaseError("Publishing the program post", error);
+        return;
+      }
+      form.reset();
+      programPostersLoaded = false;
+      showToast("Program post and results published.");
+      await loadProgramPosters();
+    };
+    publishPoster().catch(error => showDatabaseError("Publishing the program post", error));
+    return;
+  }
   if (event.target.id === "portal-event-form") {
     event.preventDefault();
     if (!currentProfile || !event.target.reportValidity()) return;
@@ -998,7 +1268,7 @@ document.addEventListener("submit", event => {
       }
       const { error } = await insertForCurrentUser("creative_submissions", {
         title: String(formData.get("title")).trim(),
-        author_name: String(formData.get("author")).trim(),
+        author_name: currentProfile.display_name,
         work_type: type,
         excerpt: String(formData.get("excerpt")).trim(),
         content: String(formData.get("content")).trim(),
@@ -1046,17 +1316,19 @@ document.addEventListener("adab:route-rendered", () => {
   initializeEventSearch();
   initializeCountdown();
   loadPortalWings();
+  loadPortalMembers();
   const route = getActiveRoute();
   if (route === "home" || route === "events") loadPortalEvents();
-  if (route === "members") loadPortalMembers();
+  if (route === "programs") loadProgramPosters();
   if (route === "home") loadAnnouncements();
   if (route === "finance") loadFinanceEntries();
+  if (route === "finance") loadBudgetAllocations();
   if (route === "admin") loadAdminProfiles();
   if (route === "account") loadReviewData();
   if (getActiveRoute() === "works" && supabase && !publishedWorksLoaded) {
     publishedWorksLoaded = true;
     supabase.from("creative_submissions")
-      .select("id,title,author_name,work_type,excerpt,content,created_at,attachment_path")
+      .select("id,user_id,title,author_name,work_type,excerpt,content,created_at,attachment_path")
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .then(async ({ data, error }) => {
@@ -1098,7 +1370,10 @@ const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
 setTheme(storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme);
 document.querySelector("#current-year").textContent = String(new Date().getFullYear());
 initializeModals();
-initializeMonthlyFundTracker();
+initializeMonthlyFundTracker({
+  getCurrentProfile: () => currentProfile,
+  notify: showToast
+});
 if (supabase) {
   supabase.auth.onAuthStateChange((event, session) => {
     const user = session?.user || null;
@@ -1108,9 +1383,11 @@ if (supabase) {
       currentProfileRequest = undefined;
       portalMembersLoaded = false;
       financeLoaded = false;
+      budgetLoaded = false;
       adminProfilesLoaded = false;
       reviewDataLoaded = false;
       setFinanceEntries([], false);
+      setBudgetAllocations([], false);
       setAdminProfiles([], false);
       setReviewData([], []);
     }
