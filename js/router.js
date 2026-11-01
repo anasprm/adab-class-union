@@ -1487,11 +1487,10 @@ const views = {
   outreach: renderOutreach,
   samia: renderSamia,
   assemblies: renderAssemblies,
-  awardScorecard: renderAwardScorecardSelfEvaluation,
+
   outreach: renderOutreach,
   samia: renderSamia,
   assemblies: renderAssemblies,
-  awardScorecard: renderAwardScorecard
 };
 
 export function setCurrentUser(user) {
@@ -1653,6 +1652,7 @@ export function getActiveRoute() {
   const fullHash = location.hash.slice(1);
   const [baseRoute, queryString] = fullHash.split("?");
   const route = baseRoute.split("#")[0];
+  const normalizedRoute = route.replace(/-\w/g, c => c[1].toUpperCase());
 
   if (route === "admin" && queryString) {
     const params = new URLSearchParams(queryString);
@@ -1666,7 +1666,7 @@ export function getActiveRoute() {
     adminActiveTab = "invites";
     return "admin";
   }
-  return Object.hasOwn(views, route) ? route : "home";
+  return Object.hasOwn(views, normalizedRoute) ? normalizedRoute : "home";
 }
 
 export function renderRoute(route = getActiveRoute()) {
