@@ -19,6 +19,7 @@ import {
   savePortalContentKey
 } from "./content.js";
 import { renderMonthlyFundTracker, setMonthlyFundDirectory } from "./monthly-funds.js";
+import { renderAwardPlanner } from "./award-planner.js";
 import {
   authenticateDemoUser,
   getDemoAccounts,
@@ -1714,48 +1715,55 @@ const AWARD_CRITERIA = [
     id: "class-programmes",
     label: "Class Programmes",
     weight: 15,
-    hint: "Union-organised programmes: debates, quizzes, cultural evenings, and inter-house events."
+    hint: "Union-organised programmes: debates, quizzes, cultural evenings, and inter-house events.",
+    evidenceExamples: "Programme plans, posters, attendance records, minutes, and completion reports."
   },
   {
     id: "samia",
     label: "SAMIA",
     weight: 10,
-    hint: "Participation and reporting under the SAMIA activity category."
+    hint: "Participation and reporting under the SAMIA activity category.",
+    evidenceExamples: "Activity plans, participation records, reports, and dated supporting material."
   },
   {
     id: "highlight",
     label: "Highlight",
     weight: 10,
-    hint: "The union's flagship highlight programme, from planning through execution."
+    hint: "The union's flagship highlight programme, from planning through execution.",
+    evidenceExamples: "The approved brief, schedule, assigned responsibilities, and completion report."
   },
   {
     id: "campus-pubs",
     label: "Campus Publications",
     weight: 20,
-    hint: "Editorial and creative publications circulated on campus: magazine, wall journal, newsletters."
+    hint: "Editorial and creative publications circulated on campus: magazine, wall journal, newsletters.",
+    evidenceExamples: "Copies of each issue, publication dates, editorial records, and circulation details."
   },
   {
     id: "outreach-pubs",
     label: "Outreach Publications",
     weight: 25,
-    hint: "Outreach publications and external visibility — the heaviest single criterion."
+    hint: "Outreach publications and external visibility — the heaviest single criterion.",
+    evidenceExamples: "Publication copies, release dates, intended audience, distribution channel, and reach."
   },
   {
     id: "bimonthly",
     label: "Bonus Bimonthly Reports",
     weight: 10,
-    hint: "Bimonthly reports filed on schedule, each accepted as bonus evidence."
+    hint: "Bimonthly reports filed on schedule, each accepted as bonus evidence.",
+    evidenceExamples: "Dated report copies and submission or receipt confirmations."
   },
   {
     id: "assembly",
     label: "Assembly",
     weight: 10,
-    hint: "General assemblies convened, minuted, and followed up on."
+    hint: "General assemblies convened, minuted, and followed up on.",
+    evidenceExamples: "Agendas, attendance records, approved minutes, resolutions, and follow-up notes."
   }
 ];
 
 const AWARD_RATING_LABELS = [
-  "Not evidenced",
+  "No evidence yet",
   "Minimal",
   "Partial",
   "Adequate",
@@ -1764,14 +1772,18 @@ const AWARD_RATING_LABELS = [
 ];
 
 function readAwardCheckpoint() {
-  const empty = { ratings: {}, evidence: {} };
+  const empty = { ratings: {}, evidence: {}, nextActions: {}, targetDates: {}, wasSaved: false };
   try {
     const raw = localStorage.getItem(AWARD_CHECKPOINT_KEY);
     if (!raw) return empty;
     const parsed = JSON.parse(raw);
+    const asRecord = value => value && typeof value === "object" && !Array.isArray(value) ? value : {};
     return {
-      ratings: parsed && typeof parsed.ratings === "object" && parsed.ratings ? parsed.ratings : {},
-      evidence: parsed && typeof parsed.evidence === "object" && parsed.evidence ? parsed.evidence : {}
+      ratings: asRecord(parsed?.ratings),
+      evidence: asRecord(parsed?.evidence),
+      nextActions: asRecord(parsed?.nextActions),
+      targetDates: asRecord(parsed?.targetDates),
+      wasSaved: true
     };
   } catch (error) {
     console.warn("Could not read the award checkpoint.", error);
@@ -1781,71 +1793,108 @@ function readAwardCheckpoint() {
 
 function writeAwardCheckpoint(state) {
   try {
-    localStorage.setItem(AWARD_CHECKPOINT_KEY, JSON.stringify(state));
+    const checkpoint = {
+      ratings: state.ratings,
+      evidence: state.evidence,
+      nextActions: state.nextActions,
+      targetDates: state.targetDates
+    };
+    localStorage.setItem(AWARD_CHECKPOINT_KEY, JSON.stringify(checkpoint));
+    return true;
   } catch (error) {
     console.warn("Could not save the award checkpoint.", error);
+    return false;
   }
+}
+
+function getAwardRating(state, criterionId) {
+  const rating = state.ratings[criterionId];
+  return Number.isInteger(rating) && rating >= 0 && rating <= 5 ? rating : null;
+}
+
+function getAwardCounts(state) {
+  return {
+    assessed: AWARD_CRITERIA.filter(criterion => getAwardRating(state, criterion.id) !== null).length,
+    evidence: AWARD_CRITERIA.filter(criterion => String(state.evidence[criterion.id] || "").trim()).length
+  };
 }
 
 function computeAwardScore(state) {
   return AWARD_CRITERIA.reduce((total, criterion) => {
-    const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
+    const rating = getAwardRating(state, criterion.id) ?? 0;
     return total + (rating / 5) * criterion.weight;
   }, 0);
 }
 
 function awardCriterionPoints(state, criterion) {
-  const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
+  const rating = getAwardRating(state, criterion.id) ?? 0;
   return Math.round((rating / 5) * criterion.weight);
 }
 
-function awardReadiness(score, ratedCount) {
-  if (!ratedCount) {
-    return {
-      label: "Not started",
-      detail: "No criterion has been assessed yet. Begin with Outreach Publications, the heaviest weighted criterion."
-    };
+function awardReadiness(state) {
+  const counts = getAwardCounts(state);
+  if (!counts.assessed) {
+    return { key: "not-started", label: "Not started", detail: "Start by assessing the evidence you already have for each criterion." };
   }
-  if (score < 40) {
-    return {
-      label: "Below threshold",
-      detail: "Core evidence is thin. Prioritise Outreach Publications and Campus Publications before anything else."
-    };
+  if (counts.assessed < AWARD_CRITERIA.length) {
+    return { key: "in-progress", label: "Assessment in progress", detail: `${AWARD_CRITERIA.length - counts.assessed} criteria still need an assessment.` };
   }
-  if (score < 60) {
-    return {
-      label: "Developing",
-      detail: "A working base exists, but the dossier will not survive scrutiny yet. Close the lowest-rated criteria."
-    };
+  if (counts.evidence < AWARD_CRITERIA.length) {
+    return { key: "evidence-gaps", label: "Evidence references needed", detail: `${AWARD_CRITERIA.length - counts.evidence} criteria still need a reference to supporting evidence.` };
   }
-  if (score < 80) {
-    return {
-      label: "On track",
-      detail: "Most criteria are evidenced. Attach documentary proof for each row and resolve remaining gaps."
-    };
-  }
-  return {
-    label: "Submission ready",
-    detail: "The dossier reads as complete. Verify every attachment, then submit to the class advisor."
-  };
+  return { key: "final-review", label: "Ready for a final check", detail: "All criteria have an assessment and evidence reference. Verify the documents against the current official rubric before submission." };
 }
 
 function buildAwardRecommendations(state) {
-  const gaps = AWARD_CRITERIA
+  return AWARD_CRITERIA
+    .map(criterion => {
+      const rating = getAwardRating(state, criterion.id);
+      const evidence = String(state.evidence[criterion.id] || "").trim();
+      const nextAction = String(state.nextActions[criterion.id] || "").trim();
+      const targetDate = String(state.targetDates[criterion.id] || "").trim();
+      const potentialPoints = Math.round(((5 - (rating ?? 0)) / 5) * criterion.weight);
+      return {
+        ...criterion,
+        rating,
+        evidence,
+        nextAction,
+        targetDate,
+        potentialPoints,
+        priority: potentialPoints + (evidence ? 0 : 0.5) + (rating === null ? 0.25 : 0)
+      };
+    })
+    .filter(criterion => criterion.rating !== 5 || !criterion.evidence)
+    .sort((a, b) => (b.priority - a.priority) || (b.weight - a.weight))
+    .slice(0, 3)
     .map(criterion => ({
-      ...criterion,
-      rating: Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0))
-    }))
-    .filter(criterion => criterion.rating < 4)
-    .sort((a, b) => (a.rating - b.rating) || (b.weight - a.weight));
+      id: criterion.id,
+      title: criterion.rating === null
+        ? `Assess ${criterion.label}`
+        : !criterion.evidence
+          ? `Add an evidence reference for ${criterion.label}`
+          : `Strengthen ${criterion.label}`,
+      detail: criterion.rating === null
+        ? `${criterion.weight}% of the weighting is still unassessed. Review the current evidence, then choose a rating.`
+        : !criterion.evidence
+          ? `Rated ${criterion.rating}/5. Record where the supporting material is stored; the estimate does not verify evidence quality.`
+          : `Rated ${criterion.rating}/5, with up to ${criterion.potentialPoints} weighted points still available in this estimate.`,
+      action: criterion.nextAction,
+      targetDate: criterion.targetDate
+    }));
+}
 
-  if (!gaps.length) {
-    return ["Every criterion is rated strong or above. Compile your supporting documents and submit before the deadline."];
+function renderAwardRecommendations(recommendations) {
+  if (!recommendations.length) {
+    return `<li class="award-recommendation-empty">Every criterion has a rating and an evidence reference. Review the source documents and confirm current requirements with your advisor.</li>`;
   }
-
-  return gaps.slice(0, 4).map(criterion =>
-    `${criterion.label} — rated ${criterion.rating}/5 of ${criterion.weight}%. ${criterion.hint}`
-  );
+  return recommendations.map(item => `<li>
+    <div>
+      <strong>${escapeHTML(item.title)}</strong>
+      <p>${escapeHTML(item.detail)}</p>
+      ${item.action ? `<p class="award-recommendation-action">Next action: ${escapeHTML(item.action)}${item.targetDate ? ` · Target ${escapeHTML(item.targetDate)}` : ""}</p>` : ""}
+    </div>
+    <button class="button button-secondary award-focus-button" type="button" data-award-focus="${escapeHTML(item.id)}">Review</button>
+  </li>`).join("");
 }
 
 function renderAwardScorecardSelfEvaluation() {
@@ -1853,116 +1902,169 @@ function renderAwardScorecardSelfEvaluation() {
   const score = computeAwardScore(state);
   const percent = Math.round(score);
   const recommendations = buildAwardRecommendations(state);
-  const ratedCount = AWARD_CRITERIA.filter(criterion => Number(state.ratings[criterion.id]) > 0).length;
-  const readiness = awardReadiness(score, ratedCount);
+  const counts = getAwardCounts(state);
+  const readiness = awardReadiness(state);
 
   return `<div class="award-ledger">
     <header class="award-ledger-head">
-      <p class="eyebrow">Self-Evaluation · Best Union Award</p>
-      <h1 class="page-title">Award readiness audit</h1>
-      <p class="lead">An administrative record of the seven official criteria. Rate the evidence you hold for each row; the estimated total updates as you work. Entries are stored on this device.</p>
+      <p class="eyebrow">Best Union Award · Working checklist</p>
+      <h1 class="page-title">Build a stronger award submission.</h1>
+      <p class="lead">Assess the seven criteria, note where evidence is stored, and set a next step for any gaps. Your estimate is a planning aid—not an official score or a prediction of the result.</p>
 
-      <div class="award-meter">
-        <div class="award-meter-head">
-          <span class="award-meter-label">Estimated total</span>
-          <strong class="award-meter-value" data-award-score>${percent}<small>/100</small></strong>
-        </div>
-        <div class="award-meter-track"><span class="award-meter-fill" data-award-bar style="width:${percent}%"></span></div>
-        <p class="award-meter-note" data-award-summary>${ratedCount} of ${AWARD_CRITERIA.length} criteria assessed · ${Math.round(score)} of 100 points</p>
-      </div>
+      <section class="award-overview" aria-label="Award checklist progress">
+        <article class="award-overview-card award-overview-score">
+          <span class="award-overview-label">Self-rating estimate</span>
+          <strong><span data-award-score>${counts.assessed ? percent : "—"}</span><small> / 100</small></strong>
+          <div class="award-meter-track" role="progressbar" aria-label="Estimated weighted score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}">
+            <span class="award-meter-fill" data-award-bar style="width:${percent}%"></span>
+          </div>
+        </article>
+        <article class="award-overview-card">
+          <span class="award-overview-label">Criteria assessed</span>
+          <strong><span data-award-assessed>${counts.assessed}</span><small> / ${AWARD_CRITERIA.length}</small></strong>
+        </article>
+        <article class="award-overview-card">
+          <span class="award-overview-label">Evidence references</span>
+          <strong><span data-award-evidence-count>${counts.evidence}</span><small> / ${AWARD_CRITERIA.length}</small></strong>
+        </article>
+      </section>
+      <p class="award-save-status" data-award-save-status data-saved="${state.wasSaved}" role="status">${state.wasSaved ? "Saved in this browser." : "Changes are saved in this browser when you edit the checklist."}</p>
 
-      <div class="award-status" data-award-status data-state="${readiness.label.toLowerCase().replaceAll(" ", "-")}">
-        <span class="award-status-label">Status</span>
-        <strong class="award-status-value" data-award-status-label>${escapeHTML(readiness.label)}</strong>
+      <section class="award-status" data-award-status data-state="${readiness.key}" aria-live="polite">
+        <div><span class="award-status-label">Checklist status</span><strong class="award-status-value" data-award-status-label>${escapeHTML(readiness.label)}</strong></div>
         <p class="award-status-detail">${escapeHTML(readiness.detail)}</p>
-      </div>
+      </section>
     </header>
 
-    <section class="award-sheet" aria-label="Award criteria ledger">
-      <table class="award-table">
-        <thead>
-          <tr>
-            <th scope="col">Criterion</th>
-            <th scope="col" class="award-col-weight">Weight</th>
-            <th scope="col" class="award-col-rating">Assessment</th>
-            <th scope="col">Evidence on file</th>
-            <th scope="col" class="award-col-points">Points</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${AWARD_CRITERIA.map(criterion => {
-            const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
-            return `<tr data-award-row="${criterion.id}">
-              <th scope="row">
-                <span class="award-criterion">${escapeHTML(criterion.label)}</span>
-                <span class="award-hint">${escapeHTML(criterion.hint)}</span>
-              </th>
-              <td class="award-col-weight">${criterion.weight}%</td>
-              <td class="award-col-rating">
-                <select class="award-select" data-award-rating="${criterion.id}" aria-label="Assessment for ${escapeHTML(criterion.label)}">
-                  ${AWARD_RATING_LABELS.map((label, value) =>
-                    `<option value="${value}"${value === rating ? " selected" : ""}>${value} — ${label}</option>`
-                  ).join("")}
-                </select>
-              </td>
-              <td>
-                <input class="award-input" type="text" maxlength="160" data-award-evidence="${criterion.id}" value="${escapeHTML(state.evidence[criterion.id] || "")}" placeholder="Certificate, report reference, or planned action" aria-label="Evidence for ${escapeHTML(criterion.label)}">
-              </td>
-              <td class="award-col-points" data-award-points>${awardCriterionPoints(state, criterion)}<small>/${criterion.weight}</small></td>
-            </tr>`;
-          }).join("")}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row">Total estimated score</th>
-            <td class="award-col-weight">100%</td>
-            <td colspan="2"></td>
-            <td class="award-col-points award-total" data-award-total>${Math.round(score)}<small>/100</small></td>
-          </tr>
-        </tfoot>
-      </table>
+    <section class="award-workspace" aria-labelledby="award-criteria-title">
+      <div class="award-section-heading">
+        <div><p class="eyebrow">The checklist</p><h2 id="award-criteria-title">Assess each criterion</h2></div>
+        <p>Use your current evidence to rate each item. Examples are prompts only; confirm requirements with the official rubric.</p>
+      </div>
+      <details class="award-rating-guide">
+        <summary>How to choose a rating <span>Working guide, not the official rubric</span></summary>
+        <ol>
+          <li><strong>0 · No evidence yet</strong><span>No supporting material is currently available.</span></li>
+          <li><strong>1 · Minimal</strong><span>Only a small amount of evidence exists; major gaps remain.</span></li>
+          <li><strong>2 · Partial</strong><span>Some activity is documented, but coverage is inconsistent.</span></li>
+          <li><strong>3 · Adequate</strong><span>Most activity is documented, with a few gaps to close.</span></li>
+          <li><strong>4 · Strong</strong><span>Evidence is organized and supports most of the work.</span></li>
+          <li><strong>5 · Exemplary</strong><span>Evidence is complete, clearly organized, and shows outcomes.</span></li>
+        </ol>
+      </details>
+      <div class="award-criteria-grid">
+        ${AWARD_CRITERIA.map((criterion, index) => {
+          const rating = getAwardRating(state, criterion.id);
+          const evidence = String(state.evidence[criterion.id] || "");
+          const nextAction = String(state.nextActions[criterion.id] || "");
+          const targetDate = String(state.targetDates[criterion.id] || "");
+          return `<article class="award-criterion-card" data-award-row="${criterion.id}">
+            <div class="award-card-heading">
+              <span class="award-card-number">${String(index + 1).padStart(2, "0")}</span>
+              <div><h3>${escapeHTML(criterion.label)}</h3><span class="award-weight">${criterion.weight}% of estimate</span></div>
+              <strong class="award-card-points" data-award-points data-award-weight="${criterion.weight}">${rating === null ? "—" : awardCriterionPoints(state, criterion)}<small>/${criterion.weight}</small></strong>
+            </div>
+            <p class="award-hint">${escapeHTML(criterion.hint)}</p>
+            <details class="award-evidence-guide">
+              <summary>Possible evidence to look for</summary>
+              <p>${escapeHTML(criterion.evidenceExamples)} Confirm what is accepted in the current award rules.</p>
+            </details>
+            <div class="award-field">
+              <label for="award-rating-${criterion.id}">Current assessment</label>
+              <select id="award-rating-${criterion.id}" class="award-select" data-award-rating="${criterion.id}">
+                <option value=""${rating === null ? " selected" : ""}>Choose a rating</option>
+                ${AWARD_RATING_LABELS.map((label, value) =>
+                  `<option value="${value}"${value === rating ? " selected" : ""}>${value} — ${label}</option>`
+                ).join("")}
+              </select>
+            </div>
+            <div class="award-field">
+              <label for="award-evidence-${criterion.id}">Evidence reference <span>Where is the document or record?</span></label>
+              <input id="award-evidence-${criterion.id}" class="award-input" type="text" maxlength="160" data-award-evidence="${criterion.id}" value="${escapeHTML(evidence)}" placeholder="Folder, file name, or link">
+            </div>
+            <div class="award-action-fields">
+              <div class="award-field">
+                <label for="award-action-${criterion.id}">Next action <span>One concrete step to close the gap</span></label>
+                <input id="award-action-${criterion.id}" class="award-input" type="text" maxlength="240" data-award-action="${criterion.id}" value="${escapeHTML(nextAction)}" placeholder="e.g. Collect the approved event report">
+              </div>
+              <div class="award-field award-date-field">
+                <label for="award-date-${criterion.id}">Target date</label>
+                <input id="award-date-${criterion.id}" class="award-input" type="date" data-award-due-date="${criterion.id}" value="${escapeHTML(targetDate)}">
+              </div>
+            </div>
+          </article>`;
+        }).join("")}
+      </div>
     </section>
 
-    <section class="award-notes" data-award-recommendations>
-      ${recommendations.map(item => `<p>${escapeHTML(item)}</p>`).join("")}
+    <section class="award-next-steps" aria-labelledby="award-next-steps-title">
+      <div class="award-section-heading">
+        <div><p class="eyebrow">Work in priority order</p><h2 id="award-next-steps-title">Your next steps</h2></div>
+        <p>Prioritized by the largest estimated gap and missing evidence references. This is a planning aid, not an official ranking.</p>
+      </div>
+      <ol class="award-recommendation-list" data-award-recommendations>
+        ${renderAwardRecommendations(recommendations)}
+      </ol>
     </section>
 
     <footer class="award-actions">
-      <p class="award-footnote">Evidence is recorded against this device only. Attach the original documents to your submission folder.</p>
-      <button type="button" class="button button-secondary" data-award-reset>Reset assessment</button>
+      <p class="award-footnote">Ratings, references, and action dates stay in this browser; they are not submitted or shared. Keep original documents in your team’s approved shared folder.</p>
+      <div class="award-action-buttons">
+        <button type="button" class="button button-secondary" data-award-print>Print / save as PDF</button>
+        <button type="button" class="button button-secondary" data-award-reset>Clear checklist</button>
+      </div>
     </footer>
   </div>`;
 }
 
 export function applyAwardCheckpointChange({ field, id, value }) {
+  const criterionExists = AWARD_CRITERIA.some(criterion => criterion.id === id);
+  if (!criterionExists) return null;
   const state = readAwardCheckpoint();
 
   if (field === "rating") {
-    state.ratings[id] = Math.min(5, Math.max(0, Number(value) || 0));
+    if (value === "") {
+      delete state.ratings[id];
+    } else {
+      const rating = Number(value);
+      if (!Number.isInteger(rating) || rating < 0 || rating > 5) return null;
+      state.ratings[id] = rating;
+    }
   } else if (field === "evidence") {
     state.evidence[id] = String(value).slice(0, 160);
+  } else if (field === "action") {
+    state.nextActions[id] = String(value).slice(0, 240);
+  } else if (field === "targetDate") {
+    const date = String(value);
+    state.targetDates[id] = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "";
   } else {
     return null;
   }
 
-  writeAwardCheckpoint(state);
-
+  const saved = writeAwardCheckpoint(state);
   const score = computeAwardScore(state);
-  const ratedCount = AWARD_CRITERIA.filter(criterion => Number(state.ratings[criterion.id]) > 0).length;
-  const readiness = awardReadiness(score, ratedCount);
+  const counts = getAwardCounts(state);
+  const readiness = awardReadiness(state);
 
   return {
     percent: Math.round(score),
-    summary: `${ratedCount} of ${AWARD_CRITERIA.length} criteria assessed · ${Math.round(score)} of 100 points`,
+    assessedCount: counts.assessed,
+    evidenceCount: counts.evidence,
     recommendations: buildAwardRecommendations(state),
     status: readiness.label,
+    statusKey: readiness.key,
     statusDetail: readiness.detail,
-    points: field === "rating" ? String(awardCriterionPoints(state, AWARD_CRITERIA.find(criterion => criterion.id === id) || { id: "", weight: 0 })) : null
+    saved,
+    points: field === "rating"
+      ? getAwardRating(state, id) === null
+        ? "—"
+        : String(awardCriterionPoints(state, AWARD_CRITERIA.find(criterion => criterion.id === id)))
+      : null
   };
 }
 
 export function resetAwardCheckpoint() {
-  writeAwardCheckpoint({ ratings: {}, evidence: {} });
+  return writeAwardCheckpoint({ ratings: {}, evidence: {}, nextActions: {}, targetDates: {} });
 }
 
 export { AWARD_CRITERIA, AWARD_CHECKPOINT_KEY };
@@ -1984,7 +2086,7 @@ const views = {
   outreach: renderOutreach,
   samia: renderSamia,
   assemblies: renderAssemblies,
-  awardScorecard: renderAwardScorecardSelfEvaluation
+  awardScorecard: renderAwardPlanner
 };
 
 export function setCurrentUser(user) {

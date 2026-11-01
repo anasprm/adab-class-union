@@ -1,12 +1,10 @@
 import {
-  applyAwardCheckpointChange,
   emptyState,
   escapeHTML,
   eventCard,
   getActiveRoute,
   portalEvents,
   renderRoute,
-  resetAwardCheckpoint,
   setAdminActiveTab,
   setAdminProfiles,
   setAnnouncements,
@@ -25,6 +23,13 @@ import {
   setPublishedWorks,
   setReviewData
 } from "./router.js";
+import {
+  exportAwardPlanner,
+  removeAwardRecord,
+  resetAwardPlanner,
+  submitAwardForm,
+  updateAwardChecklist
+} from "./award-planner.js";
 import {
   initializeEventSearch,
   initializeMemberSearch,
@@ -85,50 +90,6 @@ function showToast(message, type = "success") {
     toast.classList.add("is-leaving");
     window.setTimeout(() => toast.remove(), 200);
   }, 4200);
-}
-
-function updateAwardSummary(result) {
-  if (!result) return;
-
-  const scoreNode = document.querySelector("[data-award-score]");
-  if (scoreNode) {
-    scoreNode.replaceChildren(
-      document.createTextNode(String(result.percent)),
-      Object.assign(document.createElement("small"), { textContent: "/100" })
-    );
-  }
-
-  const barNode = document.querySelector("[data-award-bar]");
-  if (barNode) barNode.style.width = `${result.percent}%`;
-
-  const totalNode = document.querySelector("[data-award-total]");
-  if (totalNode) {
-    totalNode.replaceChildren(
-      document.createTextNode(String(result.percent)),
-      Object.assign(document.createElement("small"), { textContent: "/100" })
-    );
-  }
-
-  const summaryNode = document.querySelector("[data-award-summary]");
-  if (summaryNode) summaryNode.textContent = result.summary;
-
-  const statusNode = document.querySelector("[data-award-status]");
-  if (statusNode && result.status) {
-    statusNode.dataset.state = result.status.toLowerCase().replaceAll(" ", "-");
-    const labelNode = statusNode.querySelector("[data-award-status-label]");
-    if (labelNode) labelNode.textContent = result.status;
-    const detailNode = statusNode.querySelector(".award-status-detail");
-    if (detailNode) detailNode.textContent = result.statusDetail;
-  }
-
-  const listNode = document.querySelector("[data-award-recommendations]");
-  if (listNode) {
-    listNode.replaceChildren(...result.recommendations.map(item => {
-      const entry = document.createElement("p");
-      entry.textContent = item;
-      return entry;
-    }));
-  }
 }
 
 function showAuthNetworkError(error) {
@@ -761,23 +722,38 @@ document.addEventListener("change", event => {
 });
 
 document.addEventListener("change", event => {
-  const ratingControl = event.target.closest("[data-award-rating]");
-  if (!ratingControl) return;
-  const result = applyAwardCheckpointChange({
-    field: "rating",
-    id: ratingControl.dataset.awardRating,
-    value: ratingControl.value
-  });
-  updateAwardSummary(result);
-  const row = ratingControl.closest("[data-award-row]");
-  const pointsCell = row?.querySelector("[data-award-points]");
-  if (pointsCell && result?.points != null) {
-    const weight = row.querySelector(".award-col-weight")?.textContent?.trim() || "";
-    pointsCell.replaceChildren(
-      document.createTextNode(String(result.points)),
-      Object.assign(document.createElement("small"), { textContent: `/${weight.replace("%", "")}` })
-    );
+  if (!(event.target instanceof Element)) return;
+  const formatControl = event.target.closest("#award-activity-format");
+  if (formatControl instanceof HTMLSelectElement) {
+    const stageFields = document.querySelector("#award-stage-fields");
+    const isStage = formatControl.value === "stage";
+    if (stageFields instanceof HTMLElement) {
+      stageFields.hidden = !isStage;
+      stageFields.querySelectorAll("input[name='clip'], input[name='duration']").forEach(input => {
+        input.required = isStage;
+      });
+    }
   }
+  const reportStatus = event.target.closest("#award-report-status");
+  if (reportStatus instanceof HTMLSelectElement) {
+    const dateField = document.querySelector("#award-report-date-field");
+    const dateInput = document.querySelector("#award-report-date");
+    const isSubmitted = reportStatus.value === "submitted";
+    if (dateField instanceof HTMLElement) dateField.hidden = !isSubmitted;
+    if (dateInput instanceof HTMLInputElement) dateInput.required = isSubmitted;
+  }
+
+  const checkbox = event.target.closest("[data-award-check]");
+  const reference = event.target.closest("[data-award-reference]");
+  const control = checkbox || reference;
+  if (!control) return;
+  const saved = updateAwardChecklist(
+    control.dataset.awardCheck || control.dataset.awardReference,
+    control.dataset.awardId,
+    checkbox ? "ready" : "reference",
+    checkbox instanceof HTMLInputElement ? checkbox.checked : reference.value
+  );
+  if (!saved) showToast("Could not save this checklist item in browser storage.", "error");
 });
 
 document.addEventListener("input", event => {
@@ -785,27 +761,61 @@ document.addEventListener("input", event => {
   if (target instanceof HTMLInputElement && target.id === "ledger-search") {
     const filter = document.querySelector("#ledger-type-filter");
     setFinanceFilter(filter instanceof HTMLSelectElement ? filter.value : "all", target.value);
-    return;
   }
-  const evidenceControl = target instanceof Element ? target.closest("[data-award-evidence]") : null;
-  if (!evidenceControl) return;
-  applyAwardCheckpointChange({
-    field: "evidence",
-    id: evidenceControl.dataset.awardEvidence,
-    value: evidenceControl.value
-  });
 });
 
 document.addEventListener("click", event => {
-  const resetButton = event.target.closest("[data-award-reset]");
-  if (!resetButton) return;
-  resetAwardCheckpoint();
-  renderRoute("awardScorecard");
-  showToast("Self-evaluation reset.");
+  if (!(event.target instanceof Element)) return;
+  const removeButton = event.target.closest("[data-award-remove]");
+  if (removeButton) {
+    if (!window.confirm("Remove this record from the planner?")) return;
+    if (!removeAwardRecord(removeButton.dataset.awardRemove, removeButton.dataset.awardId)) {
+      showToast("The record could not be removed from browser storage.", "error");
+      return;
+    }
+    renderRoute("awardScorecard");
+    showToast("Award record removed.");
+    return;
+  }
+  if (event.target.closest("[data-award-print]")) {
+    window.print();
+    return;
+  }
+  if (event.target.closest("[data-award-export]")) {
+    const file = new Blob([exportAwardPlanner()], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(file);
+    link.download = `adab-award-planner-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    return;
+  }
+  if (event.target.closest("[data-award-reset]")) {
+    if (!window.confirm("Clear programme, monthly report, publication, inspection, and bonus data saved in this browser? Your earlier rating draft, if present, will be kept.")) return;
+    if (!resetAwardPlanner()) {
+      showToast("The planner could not be cleared because browser storage is unavailable.", "error");
+      return;
+    }
+    renderRoute("awardScorecard");
+    showToast("Award planner cleared.");
+  }
 });
 
 document.addEventListener("submit", event => {
   if (!(event.target instanceof HTMLFormElement)) return;
+  const awardResult = submitAwardForm(event.target);
+  if (awardResult) {
+    event.preventDefault();
+    if (!awardResult.ok) {
+      showToast(awardResult.message, "error");
+      return;
+    }
+    renderRoute("awardScorecard");
+    showToast(awardResult.message);
+    return;
+  }
   if (event.target.matches(".budget-edit-form")) {
     event.preventDefault();
     const form = event.target;
