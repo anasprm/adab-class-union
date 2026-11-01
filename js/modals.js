@@ -34,7 +34,7 @@ function showEvent(event) {
 }
 
 function showWork(work) {
-  const author = portalMembers.find(member => member.id === work.user_id)?.name || "Student contributor";
+  const author = portalMembers.find(member => member.id === work.user_id)?.name || work.author_name || "Account not listed";
   openModal("<img class=\"modal-preview modal-work-preview\" src=\"" + escapeHTML(work.image) + "\" alt=\"" + escapeHTML(work.imageAlt) + "\"><p class=\"eyebrow\">" + escapeHTML(work.type) + " · " + escapeHTML(work.date) + "</p><h2 id=\"modal-title\">" + escapeHTML(work.title) + "</h2><p><strong>By " + escapeHTML(author) + "</strong></p><p>" + escapeHTML(work.content).replace(/\n/g, "<br>") + "</p>");
 }
 
@@ -169,12 +169,12 @@ export function setPortalMembers(rows) {
     return;
   }
   portalMembers = rows.map(row => {
-    const name = row.display_name || "ADAB student";
+    const name = row.display_name || row.roll_number || "Unnamed account";
     return {
       id: row.id,
       name,
       initials: name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
-      roll: row.roll_number || row.id,
+      roll: row.roll_number || "",
       house: row.house_team || "Student",
       district: row.district || "",
       bio: row.bio || "",
@@ -186,7 +186,7 @@ export function setPortalMembers(rows) {
 
 export function initializeModals() {
   document.addEventListener("click", event => {
-    const target = event.target instanceof Element ? event.target.closest("[data-event-id], [data-work-id], [data-post-id], [data-member-roll], [data-student-roll]") : null;
+    const target = event.target instanceof Element ? event.target.closest("[data-event-id], [data-work-id], [data-post-id], [data-member-id]") : null;
     if (!target) return;
     if (event.target.closest("[data-action]")) return;
     if (target.dataset.eventId) {
@@ -207,19 +207,15 @@ export function initializeModals() {
         showProgram(program);
       }
     }
-    if (target.dataset.memberRoll) {
-      const member = portalMembers.find(item => item.roll === target.dataset.memberRoll);
-      if (member) showMember(member);
-    }
-    if (target.dataset.studentRoll) {
-      const member = portalMembers.find(item => item.roll === target.dataset.studentRoll);
+    if (target.dataset.memberId) {
+      const member = portalMembers.find(item => item.id === target.dataset.memberId);
       if (member) showMember(member);
     }
   });
 
   document.addEventListener("keydown", event => {
     if (event.key === "Escape") closeModal();
-    if ((event.key === "Enter" || event.key === " ") && event.target instanceof HTMLElement && event.target.matches("[data-event-id], [data-work-id], [data-post-id], [data-member-roll], [data-student-roll]")) {
+    if ((event.key === "Enter" || event.key === " ") && event.target instanceof HTMLElement && event.target.matches("[data-event-id], [data-work-id], [data-post-id], [data-member-id]")) {
       event.preventDefault();
       event.target.click();
     }

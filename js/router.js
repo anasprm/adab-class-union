@@ -113,8 +113,9 @@ export function eventCard(event) {
 }
 
 function profileCard(member) {
-  return `<article class="card profile-card" data-member-roll="${escapeHTML(member.roll)}" tabindex="0" role="button" aria-label="View ${escapeHTML(member.name)} profile">
-    <div class="card-body">${avatar(member.initials)}<div><span class="badge">${escapeHTML(member.role || "Member")}</span><h3>${escapeHTML(member.name)}</h3><p>${escapeHTML(member.roll || "")} · ${escapeHTML(member.district || "")}</p></div></div>
+  const details = [member.roll, member.district].filter(Boolean).map(escapeHTML).join(" · ");
+  return `<article class="card profile-card" data-member-id="${escapeHTML(member.id || "")}" tabindex="0" role="button" aria-label="View ${escapeHTML(member.name)} profile">
+    <div class="card-body">${avatar(member.initials)}<div><span class="badge">${escapeHTML(member.role || "Member")}</span><h3>${escapeHTML(member.name)}</h3><p>${details}</p></div></div>
   </article>`;
 }
 
@@ -147,7 +148,7 @@ function workCard(work) {
       <p>${escapeHTML(work.excerpt)}</p>
       ${isCode && work.codeSnippet ? `<pre class="work-code-preview"><code>${escapeHTML(work.codeSnippet.split("\n").slice(0, 4).join("\n"))}</code></pre>` : ""}
       ${work.projectUrl ? `<p class="work-link-preview"><a class="text-link" href="${escapeHTML(work.projectUrl)}" target="_blank" rel="noopener">Explore Project ↗</a></p>` : ""}
-      <div class="card-footer"><small>By ${escapeHTML(verifiedAuthor || "Student contributor")}</small><span class="text-link">Explore →</span></div>
+      <div class="card-footer"><small>By ${escapeHTML(verifiedAuthor || work.author_name || "Account not listed")}</small><span class="text-link">Explore →</span></div>
     </div>
   </article>`;
 }
@@ -2070,13 +2071,13 @@ export function setPortalMembers(rows) {
     return;
   }
   portalMembers = rows.map(row => {
-    const name = row.display_name || "Student";
+    const name = row.display_name || row.roll_number || "Unnamed account";
     return {
       id: row.id,
       role: row.role,
       name,
       initials: name.split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase(),
-      roll: row.roll_number || row.id,
+      roll: row.roll_number || "",
       house: row.house_team || "Student",
       district: row.district || "District not added",
       bio: row.bio || "",

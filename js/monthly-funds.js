@@ -113,7 +113,7 @@ export function renderMonthlyFundTracker(currentProfile) {
   const fixedAmount = state.fixedAmount || 100;
   const students = (state.students || []).map(student => ({
     ...student,
-    name: realStudentNames.get(student.roll) || `Student ${student.roll}`
+    name: realStudentNames.get(student.roll) || student.roll
   }));
   const totalStudents = students.length;
 

@@ -51,6 +51,7 @@ const toastRegion = document.querySelector(".toast-region");
 let publishedWorksLoaded = false;
 let portalWingsLoaded = false;
 let portalMembersLoaded = false;
+let portalDirectoryWarningShown = false;
 let portalEventsLoaded = false;
 let programPostersLoaded = false;
 let announcementsLoaded = false;
@@ -168,6 +169,7 @@ async function loadCurrentProfile(user) {
     return;
   }
   currentProfile = data?.is_active ? data : null;
+  portalMembersLoaded = false;
   setCurrentProfile(currentProfile);
 }
 
@@ -235,7 +237,25 @@ async function loadPortalMembers() {
     .select("id,display_name,role,roll_number,house_team,district,bio")
     .order("display_name");
   if (error) {
-    showDatabaseError("Loading the class directory", error);
+    if (!portalDirectoryWarningShown) {
+      showDatabaseError("Loading the class directory", error);
+      portalDirectoryWarningShown = true;
+    }
+    if (error.code !== "PGRST205" || currentProfile?.role !== "developer") {
+      return;
+    }
+    const { data: profiles, error: profileError } = await supabase.from("profiles")
+      .select("id,display_name,role,roll_number,house_team,district,bio")
+      .eq("is_active", true)
+      .order("display_name");
+    if (profileError) {
+      showDatabaseError("Loading names from the developer account roster", profileError);
+      return;
+    }
+    const rows = profiles || [];
+    setDirectoryStudents(rows);
+    setModalPortalMembers(rows);
+    setPortalMembers(rows);
     return;
   }
   const rows = data || [];
@@ -334,18 +354,32 @@ async function loadReviewData() {
   const identities = identityIds.length
     ? await supabase.from("portal_people_directory").select("id,display_name").in("id", identityIds)
     : { data: [], error: null };
-  if (identities.error) {
+  let identityRows = identities.data || [];
+  if (identities.error?.code === "PGRST205" && currentProfile.role === "developer") {
+    const { data, error } = await supabase.from("profiles")
+      .select("id,display_name")
+      .in("id", identityIds);
+    if (error) {
+      reviewDataLoaded = false;
+      showDatabaseError("Loading account names from the developer roster", error);
+      return;
+    }
+    identityRows = data || [];
+  } else if (identities.error) {
     reviewDataLoaded = false;
     showDatabaseError("Loading account names for council review", identities.error);
     return;
   }
-  const namesById = new Map((identities.data || []).map(item => [item.id, item.display_name]));
+  const namesById = new Map(identityRows.map(item => [
+    item.id,
+    item.display_name || "Account not listed"
+  ]));
   setReviewData((works.data || []).map(item => ({
     ...item,
-    author_name: namesById.get(item.user_id) || "Student contributor"
+    author_name: namesById.get(item.user_id) || item.author_name || "Account not listed"
   })), (suggestions.data || []).map(item => ({
     ...item,
-    email: namesById.get(item.user_id) || "Student account"
+    email: namesById.get(item.user_id) || "Account not listed"
   })));
 }
 
@@ -1382,6 +1416,7 @@ if (supabase) {
       currentProfile = null;
       currentProfileRequest = undefined;
       portalMembersLoaded = false;
+      portalDirectoryWarningShown = false;
       financeLoaded = false;
       budgetLoaded = false;
       adminProfilesLoaded = false;
