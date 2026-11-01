@@ -275,6 +275,7 @@ function renderPrograms() {
   })).map(program => ({ ...program, hasResult: program.result.length > 0 }));
   const posterPrograms = programsList.filter(program => !program.video);
   const videoPrograms = programsList.filter(program => program.video);
+  const canDeletePosters = currentProfile?.is_active && currentProfile.role === "developer";
   const renderProgramCards = programs => programs.map(prog => `
         <article class="ig-post-card program-card" data-post-id="${escapeHTML(prog.id)}" aria-label="${escapeHTML(prog.title)} ${prog.video ? "video reel" : "poster"}">
           <div class="ig-card-inner">
@@ -286,6 +287,7 @@ function renderPrograms() {
                     ? `<img src="${escapeHTML(prog.image)}" alt="${escapeHTML(prog.title)}" loading="lazy">`
                     : `<div class="program-media-placeholder" role="img" aria-label="Poster unavailable for ${escapeHTML(prog.title)}">Poster unavailable</div>`}
                 <div class="program-poster-overlay">
+                  ${canDeletePosters && !prog.video ? `<button type="button" class="program-delete-button" data-action="delete-program-poster" data-program-id="${escapeHTML(prog.id)}" data-program-title="${escapeHTML(prog.title)}" aria-label="Delete poster: ${escapeHTML(prog.title)}">Delete poster</button>` : ""}
                   <span class="program-poster-category">${escapeHTML(prog.wing)}</span>
                   <strong>${escapeHTML(prog.title)}</strong>
                   <small>${escapeHTML(prog.date)} · ${escapeHTML(prog.venue)}</small>

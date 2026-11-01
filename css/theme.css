@@ -501,6 +501,24 @@ body { overflow-x: hidden; }
   color: #fff;
 }
 .program-poster-category { font-size: .64rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.program-delete-button {
+  position: absolute;
+  top: clamp(10px, 1.5vw, 16px);
+  right: clamp(10px, 1.5vw, 16px);
+  z-index: 1;
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid rgb(255 255 255 / 75%);
+  border-radius: 2px;
+  background: var(--red-primary);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.program-delete-button:hover { background: var(--red-dark); }
+.program-delete-button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.program-delete-button:disabled { cursor: wait; opacity: .7; }
 .program-media-kind {
   position: absolute;
   top: clamp(10px, 1.5vw, 16px);

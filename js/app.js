@@ -402,6 +402,73 @@ document.addEventListener("click", event => {
 
 document.addEventListener("click", event => {
   const action = event.target instanceof Element ? event.target.closest("[data-action]") : null;
+  if (action?.dataset.action === "delete-program-poster") {
+    event.preventDefault();
+    if (currentProfile?.is_active !== true || currentProfile.role !== "developer") {
+      showToast("Only an active developer can delete program posters.", "error");
+      return;
+    }
+    if (!supabase) {
+      showToast("Program poster deletion is currently unavailable.", "error");
+      return;
+    }
+
+    const posterId = action.dataset.programId;
+    const posterTitle = action.dataset.programTitle || "this poster";
+    if (!posterId || !window.confirm(`Permanently delete "${posterTitle}" and its results? This cannot be undone.`)) return;
+
+    action.disabled = true;
+    void (async () => {
+      try {
+        const { data: poster, error: lookupError } = await supabase.from("program_posters")
+          .select("id,poster_path")
+          .eq("id", posterId)
+          .maybeSingle();
+        if (lookupError) {
+          showDatabaseError("Finding the program poster", lookupError);
+          return;
+        }
+        if (!poster) {
+          showToast("This program poster no longer exists.", "error");
+          return;
+        }
+
+        const { data: deleted, error: deleteError } = await supabase.from("program_posters")
+          .delete()
+          .eq("id", posterId)
+          .select("id")
+          .maybeSingle();
+        if (deleteError) {
+          showDatabaseError("Deleting the program poster", deleteError);
+          return;
+        }
+        if (!deleted) {
+          showToast("The poster was not deleted. It may have already been removed or access may have changed.", "error");
+          return;
+        }
+
+        let storageError = null;
+        if (poster.poster_path) {
+          const { error } = await supabase.storage.from("program-posters").remove([poster.poster_path]);
+          storageError = error;
+        }
+        programPostersLoaded = false;
+        await loadProgramPosters();
+        if (storageError) {
+          console.error("The program poster was deleted, but its stored image could not be removed.", storageError);
+          showToast("Poster deleted, but its uploaded image could not be removed from storage.", "error");
+        } else {
+          showToast("Program poster deleted.");
+        }
+      } catch (error) {
+        showDatabaseError("Deleting the program poster", error);
+      } finally {
+        if (action.isConnected) action.disabled = false;
+      }
+    })();
+    return;
+  }
+
   if (action?.dataset.action === "toggle-password") {
     const password = document.querySelector("#login-password");
     if (!(password instanceof HTMLInputElement)) return;
