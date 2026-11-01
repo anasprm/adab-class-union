@@ -1,4 +1,5 @@
-import { students, studentProfiles, getStudentAchievementSummary, avatarOptions, achievementRecords } from "./data.js";
+import { students, studentProfiles, getStudentAchievementSummary, avatarOptions, achievementRecords, events, coreMembers, creativeWorks } from "./data.js";
+import { assetPaths } from "./assets.js";
 
 const backdrop = document.querySelector("#modal-backdrop");
 const content = document.querySelector("#modal-content");
@@ -96,7 +97,7 @@ function showProgram(program) {
       ${resultHtml}
     </div>
     <div style="margin-top: 20px; color: #6B7280; font-size: .82rem;">
-      <strong>Comments</strong> (${program.comments.length})
+      <strong>Comments</strong> (${(program.comments || []).length})
       ${commentsHtml}
     </div>
     <div style="margin-top: 24px; text-align: right;">
@@ -161,6 +162,7 @@ export function initializeModals() {
   document.addEventListener("click", event => {
     const target = event.target instanceof Element ? event.target.closest("[data-event-id], [data-work-id], [data-post-id], [data-member-roll], [data-student-roll]") : null;
     if (!target) return;
+    if (event.target.closest("[data-action]")) return;
     if (target.dataset.eventId) {
       const event = [...events, ...portalEvents].find(item => item.id === target.dataset.eventId);
       if (event) showEvent(event);

@@ -1,4 +1,4 @@
-import { students, studentProfiles, getStudentAchievementSummary, avatarOptions } from "./data.js";
+import { students, studentProfiles, getStudentAchievementSummary, avatarOptions, events } from "./data.js";
 
 let directoryStudents = students;
 let portalEvents = [];
@@ -48,6 +48,7 @@ export function initializeMemberSearch() {
   const district = document.querySelector("#district-filter");
   const clear = document.querySelector(".search-clear");
   const count = document.querySelector("#member-result-count");
+  if (!search || !house || !district) return;
 
   const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -82,10 +83,10 @@ export function initializeMemberSearch() {
     </article>`).join("") : `<div class="empty-state"><strong>No classmates found</strong>Try another name, house team, or district.</div>`;
   }
 
-  search.addEventListener("input", update);
-  house.addEventListener("change", update);
-  district.addEventListener("change", update);
-  clear.addEventListener("click", () => { search.value = ""; update(); search.focus(); });
+  search?.addEventListener("input", update);
+  house?.addEventListener("change", update);
+  district?.addEventListener("change", update);
+  clear?.addEventListener("click", () => { search.value = ""; update(); search.focus(); });
   update();
 }
 
@@ -98,6 +99,7 @@ export function initializeEventSearch() {
   const category = document.querySelector("#event-category-filter");
   const clear = document.querySelector(".event-filter-bar .search-clear");
   const count = document.querySelector("#event-result-count");
+  if (!search || !status || !category) return;
   const escapeHTML = value => String(value).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[character]);

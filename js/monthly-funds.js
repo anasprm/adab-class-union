@@ -1,4 +1,4 @@
-import { studentSeedData } from "./data.js";
+import { studentSeedData, teacherAnnualDonationBase } from "./data.js";
 import { formatMoney, escapeHTML } from "./router.js";
 
 const MONTHLY_FUND_STORAGE_KEY = "adab_monthly_fund_state";

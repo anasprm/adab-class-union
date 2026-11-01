@@ -44,7 +44,7 @@ let authFeedback = "";
 let authFeedbackType = "error";
 let publishedWorks = [];
 let portalWings = wings;
-let portalEvents = [];
+export let portalEvents = [];
 let announcements = [];
 let financeEntries = initialFinanceEntries;
 let budgetAllocations = initialBudgetAllocations;
@@ -93,7 +93,7 @@ export const avatar = (initials, extraClass = "") =>
 export const emptyState = (title, message) =>
   `<div class="empty-state"><strong>${escapeHTML(title)}</strong>${escapeHTML(message)}</div>`;
 
-function eventCard(event) {
+export function eventCard(event) {
   const date = new Date(event.date);
   const upcoming = event.status === "Upcoming";
   return `<article class="card event-card" data-event-id="${escapeHTML(event.id)}" tabindex="0" role="button" aria-label="View ${escapeHTML(event.title)} details">
@@ -1471,6 +1471,343 @@ function renderInviteOnboarding() {
   </div>`;
 }
 
+function renderOutreach() {
+  const initiatives = [
+    {
+      title: "Inter-school collaborations",
+      detail: "Joint literary, cultural, and science programmes with neighbouring higher secondary schools, arranged with the class teacher's approval."
+    },
+    {
+      title: "Community service drives",
+      detail: "Blood donation camps, study-material distribution, and campus clean-up drives staffed by wing volunteers."
+    },
+    {
+      title: "SAMIA outreach reporting",
+      detail: "Every external activity is logged under the SAMIA outreach category so participation counts towards award readiness."
+    },
+    {
+      title: "Public relations desk",
+      detail: "The PRO publishes announcements, press notes, and invitations for external events on behalf of the union."
+    }
+  ];
+
+  return `<div class="page-shell">
+    <header>
+      <p class="eyebrow">Outreach &amp; External Relations</p>
+      <h1 class="page-title">Carrying ADAB beyond the classroom.</h1>
+      <p class="lead">Outreach covers everything the union does outside its own wings — inter-school collaborations, community service, and public programmes. Each activity is documented so members receive recognition for it.</p>
+    </header>
+
+    <section class="section-block">
+      <div class="card-grid">
+        ${initiatives.map(item => `
+          <article class="card">
+            <div class="card-body">
+              <span class="badge">Outreach</span>
+              <h3>${escapeHTML(item.title)}</h3>
+              <p>${escapeHTML(item.detail)}</p>
+            </div>
+          </article>`).join("")}
+      </div>
+    </section>
+
+    <section class="section-block">
+      <p class="eyebrow">How to participate</p>
+      <h2 class="section-title">Propose an outreach activity</h2>
+      <p class="lead">Bring your proposal to a core committee member before the weekly review. Approved activities are announced on the portal and counted in the SAMIA outreach record.</p>
+      <div class="auth-required">
+        <p>${currentUser ? "Open your account to review the outreach activities credited to you." : "Sign in with your student account to track the outreach work credited to you."}</p>
+        <a class="button" href="#${currentUser ? "account" : "login"}">${currentUser ? "Open your account →" : "Sign in →"}</a>
+      </div>
+    </section>
+  </div>`;
+}
+
+function renderSamia() {
+  const tracks = [
+    {
+      title: "SAMIA outreach cycle",
+      detail: "Outreach participation is collected each cycle, verified by the wing lead, and reported to the class teacher before it is entered in the union record."
+    },
+    {
+      title: "Bimonthly union digest",
+      detail: "Every second month the union publishes a digest of programmes, results, and financial highlights so members can follow what the council has done."
+    },
+    {
+      title: "Participation credit",
+      detail: "Members named in a verified outreach report receive participation credit that appears in their achievement summary."
+    }
+  ];
+
+  return `<div class="page-shell">
+    <header>
+      <p class="eyebrow">SAMIA &amp; Bimonthly</p>
+      <h1 class="page-title">Structured outreach, reported on time.</h1>
+      <p class="lead">This section explains how SAMIA outreach activities are recorded and how the bimonthly union digest is compiled and published.</p>
+    </header>
+
+    <section class="section-block">
+      <div class="card-grid">
+        ${tracks.map(item => `
+          <article class="card">
+            <div class="card-body">
+              <span class="badge">SAMIA</span>
+              <h3>${escapeHTML(item.title)}</h3>
+              <p>${escapeHTML(item.detail)}</p>
+            </div>
+          </article>`).join("")}
+      </div>
+    </section>
+
+    <section class="section-block">
+      <p class="eyebrow">Reporting window</p>
+      <h2 class="section-title">What to submit each cycle</h2>
+      <p class="lead">Activity name, date, venue, the members who attended, and a photograph or signed attendance sheet. Incomplete entries are sent back to the wing lead before verification.</p>
+      <div class="auth-required">
+        <p>${currentUser ? "Your account shows the outreach entries already credited to you." : "Sign in to see the outreach entries credited to your account."}</p>
+        <a class="button" href="#${currentUser ? "account" : "login"}">${currentUser ? "Open your account →" : "Sign in →"}</a>
+      </div>
+    </section>
+  </div>`;
+}
+
+function renderAssemblies() {
+  const assemblyTypes = [
+    {
+      title: "General assembly",
+      detail: "The full class meets to hear announcements from the president, secretary, and treasurer, and to approve upcoming programmes."
+    },
+    {
+      title: "Wing review assembly",
+      detail: "Wing holders report progress on their activities, review pending tasks, and hand over completed work to the core committee."
+    },
+    {
+      title: "Finance assembly",
+      detail: "The treasurer presents the union fund position, including monthly student contributions and every recorded expense."
+    }
+  ];
+
+  return `<div class="page-shell">
+    <header>
+      <p class="eyebrow">Assemblies</p>
+      <h1 class="page-title">Where the class takes its decisions.</h1>
+      <p class="lead">Assemblies are the union's decision-making forum. Agendas are circulated in advance, minutes are recorded by the secretary, and every resolution is published here.</p>
+    </header>
+
+    <section class="section-block">
+      <div class="card-grid">
+        ${assemblyTypes.map(item => `
+          <article class="card">
+            <div class="card-body">
+              <span class="badge">Assembly</span>
+              <h3>${escapeHTML(item.title)}</h3>
+              <p>${escapeHTML(item.detail)}</p>
+            </div>
+          </article>`).join("")}
+      </div>
+    </section>
+
+    <section class="section-block">
+      <p class="eyebrow">Procedure</p>
+      <h2 class="section-title">How an assembly runs</h2>
+      <p class="lead">The president opens the meeting and confirms quorum. Each wing reports in turn, the treasurer presents the fund position, and open points are debated before a vote. The secretary uploads the minutes within two days of the meeting.</p>
+      <div class="auth-required">
+        <p>${currentUser ? "Minutes and resolutions are published through the account dashboard." : "Sign in to read the minutes and resolutions passed in previous assemblies."}</p>
+        <a class="button" href="#${currentUser ? "account" : "login"}">${currentUser ? "Open your account →" : "Sign in →"}</a>
+      </div>
+    </section>
+  </div>`;
+}
+
+const AWARD_CHECKPOINT_KEY = "award_checkpoint_v1";
+
+const AWARD_CRITERIA = [
+  {
+    id: "academic",
+    label: "Academic Performance",
+    weight: 20,
+    hint: "Term results, subject rankings, and consistency across assessments."
+  },
+  {
+    id: "attendance",
+    label: "Attendance & Punctuality",
+    weight: 15,
+    hint: "Attendance percentage and punctuality through the academic year."
+  },
+  {
+    id: "leadership",
+    label: "Leadership & Initiative",
+    weight: 15,
+    hint: "Union responsibilities, wing roles, and self-initiated projects."
+  },
+  {
+    id: "cultural",
+    label: "Literary & Cultural Participation",
+    weight: 15,
+    hint: "Stage events, publications, and inter-house cultural contests."
+  },
+  {
+    id: "sports",
+    label: "Sports & Physical Fitness",
+    weight: 10,
+    hint: "Athletic participation, team representation, and physical education."
+  },
+  {
+    id: "service",
+    label: "Community Service & Outreach",
+    weight: 15,
+    hint: "Volunteering, SAMIA outreach drives, and external collaborations."
+  },
+  {
+    id: "conduct",
+    label: "Conduct & Values",
+    weight: 10,
+    hint: "Discipline, cooperation, and conduct recorded by class teachers."
+  }
+];
+
+const AWARD_RATING_LABELS = [
+  "Not started",
+  "Getting started",
+  "Developing",
+  "Consistent",
+  "Strong",
+  "Outstanding"
+];
+
+function readAwardCheckpoint() {
+  const empty = { ratings: {}, evidence: {} };
+  try {
+    const raw = localStorage.getItem(AWARD_CHECKPOINT_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+    return {
+      ratings: parsed && typeof parsed.ratings === "object" && parsed.ratings ? parsed.ratings : {},
+      evidence: parsed && typeof parsed.evidence === "object" && parsed.evidence ? parsed.evidence : {}
+    };
+  } catch (error) {
+    console.warn("Could not read the award checkpoint.", error);
+    return empty;
+  }
+}
+
+function writeAwardCheckpoint(state) {
+  try {
+    localStorage.setItem(AWARD_CHECKPOINT_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("Could not save the award checkpoint.", error);
+  }
+}
+
+function computeAwardScore(state) {
+  return AWARD_CRITERIA.reduce((total, criterion) => {
+    const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
+    return total + (rating / 5) * criterion.weight;
+  }, 0);
+}
+
+function buildAwardRecommendations(state) {
+  const gaps = AWARD_CRITERIA
+    .map(criterion => ({
+      ...criterion,
+      rating: Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0))
+    }))
+    .filter(criterion => criterion.rating < 4)
+    .sort((a, b) => (a.rating - b.rating) || (b.weight - a.weight));
+
+  if (!gaps.length) {
+    return ["Every criterion is rated consistent or above. Compile your supporting documents and submit before the deadline."];
+  }
+
+  return gaps.slice(0, 4).map(criterion =>
+    `${criterion.label} is rated ${criterion.rating}/5 — ${criterion.hint}`
+  );
+}
+
+function renderAwardScorecardSelfEvaluation() {
+  const state = readAwardCheckpoint();
+  const score = computeAwardScore(state);
+  const percent = Math.round(score);
+  const recommendations = buildAwardRecommendations(state);
+  const ratedCount = AWARD_CRITERIA.filter(criterion => Number(state.ratings[criterion.id]) > 0).length;
+
+  return `<div class="award-selfeval-page">
+    <header class="award-selfeval-header">
+      <p class="eyebrow">Self-Evaluation</p>
+      <h2>Award readiness scorecard</h2>
+      <p class="lead">Rate yourself honestly on each of the seven criteria. Your entries are saved on this device and can be revised at any time.</p>
+      <div class="award-selfeval-score" data-award-score>${percent}%</div>
+      <p class="award-selfeval-percent" data-award-summary>${ratedCount} of ${AWARD_CRITERIA.length} criteria rated · weighted total ${score.toFixed(1)} / 100</p>
+    </header>
+
+    <section class="section-block" style="margin-top:28px">
+      <div class="award-selfeval-grid">
+        ${AWARD_CRITERIA.map(criterion => {
+          const rating = Math.min(5, Math.max(0, Number(state.ratings[criterion.id]) || 0));
+          return `<article class="award-selfeval-card" data-award-card="${criterion.id}">
+            <div class="category-name">${escapeHTML(criterion.label)}</div>
+            <div class="status">Weight ${criterion.weight}% · ${escapeHTML(criterion.hint)}</div>
+            <label class="award-field">
+              <span>Your rating</span>
+              <select data-award-rating="${criterion.id}">
+                ${AWARD_RATING_LABELS.map((label, value) =>
+                  `<option value="${value}"${value === rating ? " selected" : ""}>${value} — ${label}</option>`
+                ).join("")}
+              </select>
+            </label>
+            <label class="award-field">
+              <span>Evidence or next step</span>
+              <input type="text" maxlength="160" data-award-evidence="${criterion.id}" value="${escapeHTML(state.evidence[criterion.id] || "")}" placeholder="Certificate, result sheet, or planned action">
+            </label>
+            <div class="evidence-count">${rating > 0 ? `${Math.round((rating / 5) * criterion.weight)} of ${criterion.weight} points` : "Not yet rated"}</div>
+          </article>`;
+        }).join("")}
+      </div>
+    </section>
+
+    <section class="award-recommendations">
+      <h3>Recommendations</h3>
+      <ul data-award-recommendations>
+        ${recommendations.map(item => `<li>${escapeHTML(item)}</li>`).join("")}
+      </ul>
+    </section>
+
+    <p class="award-footer">
+      <button type="button" class="button button-secondary" data-award-reset>Reset self-evaluation</button>
+    </p>
+  </div>`;
+}
+
+export function applyAwardCheckpointChange({ field, id, value }) {
+  const state = readAwardCheckpoint();
+
+  if (field === "rating") {
+    state.ratings[id] = Math.min(5, Math.max(0, Number(value) || 0));
+  } else if (field === "evidence") {
+    state.evidence[id] = String(value).slice(0, 160);
+  } else {
+    return null;
+  }
+
+  writeAwardCheckpoint(state);
+
+  const score = computeAwardScore(state);
+  const ratedCount = AWARD_CRITERIA.filter(criterion => Number(state.ratings[criterion.id]) > 0).length;
+
+  return {
+    percent: Math.round(score),
+    summary: `${ratedCount} of ${AWARD_CRITERIA.length} criteria rated · weighted total ${score.toFixed(1)} / 100`,
+    recommendations: buildAwardRecommendations(state),
+    points: field === "rating" ? Math.round(((Number(value) || 0) / 5) * (AWARD_CRITERIA.find(criterion => criterion.id === id)?.weight || 0)) : null
+  };
+}
+
+export function resetAwardCheckpoint() {
+  writeAwardCheckpoint({ ratings: {}, evidence: {} });
+}
+
+export { AWARD_CRITERIA, AWARD_CHECKPOINT_KEY };
+
 const views = {
   home: renderHome,
   about: renderAbout,
@@ -1484,13 +1821,11 @@ const views = {
   account: renderAccount,
   finance: renderFinance,
   admin: renderAdmin,
+  invite: renderInviteOnboarding,
   outreach: renderOutreach,
   samia: renderSamia,
   assemblies: renderAssemblies,
-
-  outreach: renderOutreach,
-  samia: renderSamia,
-  assemblies: renderAssemblies,
+  awardScorecard: renderAwardScorecardSelfEvaluation
 };
 
 export function setCurrentUser(user) {
@@ -1666,7 +2001,9 @@ export function getActiveRoute() {
     adminActiveTab = "invites";
     return "admin";
   }
-  return Object.hasOwn(views, normalizedRoute) ? normalizedRoute : "home";
+  return Object.hasOwn(views, route) ? route
+    : Object.hasOwn(views, normalizedRoute) ? normalizedRoute
+    : "home";
 }
 
 export function renderRoute(route = getActiveRoute()) {
@@ -1679,11 +2016,16 @@ export function renderRoute(route = getActiveRoute()) {
     const render = views[route] || views.home;
     root.innerHTML = render() || "";
     root.dataset.route = route;
-    document.title = `${route === "home" ? "ADAB Class Union" : `${route.replaceAll("-", " ").replace(/\b\w/g, c => c.toUpperCase())} · ADAB`}`;
+    const activeHash = location.hash.slice(1).split("?")[0].split("#")[0];
+    const displayRoute = route
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replaceAll("-", " ")
+      .replace(/\b\w/g, character => character.toUpperCase());
+    document.title = route === "home" ? "ADAB Class Union" : `${displayRoute} · ADAB`;
 
     // Update navigation links
     document.querySelectorAll("[data-route]").forEach(link => {
-      if (link.dataset.route === route) link.setAttribute("aria-current", "page");
+      if (link.dataset.route === route || link.dataset.route === activeHash) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
 

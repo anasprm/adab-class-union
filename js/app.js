@@ -1,6 +1,12 @@
 import {
+  applyAwardCheckpointChange,
+  emptyState,
+  escapeHTML,
+  eventCard,
   getActiveRoute,
+  portalEvents,
   renderRoute,
+  resetAwardCheckpoint,
   setAdminActiveTab,
   setAdminProfiles,
   setAnnouncements,
@@ -31,6 +37,8 @@ import {
 } from "./modals.js";
 import { isSupabaseConfigured, supabase } from "./supabase.js";
 import { initializeMonthlyFundTracker } from "./monthly-funds.js";
+import { getDemoInvites, saveDemoInvites } from "./demo-accounts.js";
+import { events } from "./data.js";
 
 const themeButton = document.querySelector(".theme-toggle");
 const menuButton = document.querySelector(".menu-toggle");
@@ -71,6 +79,22 @@ function showToast(message, type = "success") {
     toast.classList.add("is-leaving");
     window.setTimeout(() => toast.remove(), 200);
   }, 4200);
+}
+
+function updateAwardSummary(result) {
+  if (!result) return;
+  const scoreNode = document.querySelector("[data-award-score]");
+  const summaryNode = document.querySelector("[data-award-summary]");
+  const listNode = document.querySelector("[data-award-recommendations]");
+  if (scoreNode) scoreNode.textContent = `${result.percent}%`;
+  if (summaryNode) summaryNode.textContent = result.summary;
+  if (listNode) {
+    listNode.replaceChildren(...result.recommendations.map(item => {
+      const entry = document.createElement("li");
+      entry.textContent = item;
+      return entry;
+    }));
+  }
 }
 
 function showAuthNetworkError(error) {
@@ -505,7 +529,10 @@ document.addEventListener("click", event => {
     }
     return;
   }
-  if (link) {
+  const suggestionLink = event.target instanceof Element
+    ? event.target.closest('a[href="#home#suggestions"]')
+    : null;
+  if (suggestionLink) {
     event.preventDefault();
     location.hash = "home";
     window.setTimeout(() => document.querySelector("#suggestions")?.scrollIntoView({ behavior: "smooth" }), 0);
@@ -556,6 +583,41 @@ document.addEventListener("change", event => {
       if (event.target.value === "wing" && !wingSelect.value) wingSelect.value = wingSelect.options[1]?.value || "";
     }
   }
+});
+
+document.addEventListener("change", event => {
+  const ratingControl = event.target.closest("[data-award-rating]");
+  if (!ratingControl) return;
+  const result = applyAwardCheckpointChange({
+    field: "rating",
+    id: ratingControl.dataset.awardRating,
+    value: ratingControl.value
+  });
+  updateAwardSummary(result);
+  const counter = ratingControl.closest("[data-award-card]")?.querySelector(".evidence-count");
+  if (counter) {
+    counter.textContent = Number(ratingControl.value) > 0
+      ? `Rated ${ratingControl.value}/5`
+      : "Not yet rated";
+  }
+});
+
+document.addEventListener("input", event => {
+  const evidenceControl = event.target.closest("[data-award-evidence]");
+  if (!evidenceControl) return;
+  applyAwardCheckpointChange({
+    field: "evidence",
+    id: evidenceControl.dataset.awardEvidence,
+    value: evidenceControl.value
+  });
+});
+
+document.addEventListener("click", event => {
+  const resetButton = event.target.closest("[data-award-reset]");
+  if (!resetButton) return;
+  resetAwardCheckpoint();
+  renderRoute("awardScorecard");
+  showToast("Self-evaluation reset.");
 });
 
 document.addEventListener("submit", event => {
