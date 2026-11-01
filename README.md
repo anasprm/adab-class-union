@@ -73,6 +73,16 @@ The repository is a Vite static site; Vercel builds it with `npm run build` and 
 3. Redeploy after setting or changing these values; Vite embeds public client configuration at build time.
 4. Add the deployed domain to Supabase Auth's allowed redirect URLs.
 
+## Install ADAB on a device
+
+The site includes a web-app manifest and the official ADAB mark for its app icon. After deploying to `https://adabfriends.vercel.app/`, open that address on the device:
+
+- **Android:** In Chrome, open the browser menu and tap **Install app** or **Add to Home screen**.
+- **Windows:** In Microsoft Edge or Chrome, use the install-app button in the address bar or the browser menu.
+- **iPhone/iPad:** In Safari, tap **Share**, then **Add to Home Screen**.
+
+The app opens in its own window where supported. iOS requires adding it from Safari; a single downloadable shortcut file is not shared across all three operating systems.
+
 The publishable/anon key is intended for browser use and is not a password. Database access is restricted by the migration's RLS policies.
 
 ## Data note
