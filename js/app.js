@@ -21,7 +21,9 @@ import {
   setPortalMembers,
   setPortalWings,
   setPublishedWorks,
-  setReviewData
+  setReviewData,
+  setOutreachRequests,
+  setAcceptedOutreachPrograms
 } from "./router.js";
 import {
   exportAwardPlanner,
@@ -64,6 +66,8 @@ let financeLoaded = false;
 let budgetLoaded = false;
 let adminProfilesLoaded = false;
 let reviewDataLoaded = false;
+let outreachRequestsLoaded = false;
+let acceptedOutreachProgramsLoaded = false;
 let currentProfileRequest;
 let authenticatedUserId = null;
 let currentProfile = null;
@@ -344,6 +348,62 @@ async function loadReviewData() {
   })));
 }
 
+async function loadOutreachRequests() {
+  if (!supabase || !currentProfile || !["student", "developer"].includes(currentProfile.role) || outreachRequestsLoaded) return;
+  outreachRequestsLoaded = true;
+  setOutreachRequests([], true);
+  let query = supabase.from("outreach_program_requests")
+    .select("id,user_id,title,program_date,venue,description,evidence_path,status,created_at")
+    .order("created_at", { ascending: false });
+  if (currentProfile.role === "developer") {
+    query = query.eq("status", "pending");
+  } else {
+    query = query.eq("user_id", currentProfile.id);
+  }
+  const { data, error } = await query;
+  if (error) {
+    setOutreachRequests([], false);
+    outreachRequestsLoaded = false;
+    showDatabaseError("Loading outreach programme requests", error);
+    return;
+  }
+  let requests = data || [];
+  if (currentProfile.role === "developer" && requests.length) {
+    const userIds = [...new Set(requests.map(request => request.user_id).filter(Boolean))];
+    const { data: profiles, error: profilesError } = await supabase.from("profiles")
+      .select("id,display_name")
+      .in("id", userIds);
+    if (profilesError) {
+      setOutreachRequests([], false);
+      outreachRequestsLoaded = false;
+      showDatabaseError("Loading student names for outreach requests", profilesError);
+      return;
+    }
+    const namesById = new Map((profiles || []).map(profile => [profile.id, profile.display_name]));
+    requests = requests.map(request => ({
+      ...request,
+      submitter_name: namesById.get(request.user_id) || "Student account"
+    }));
+  }
+  setOutreachRequests(requests, false);
+}
+
+async function loadAcceptedOutreachPrograms() {
+  if (!supabase || acceptedOutreachProgramsLoaded) return;
+  acceptedOutreachProgramsLoaded = true;
+  setAcceptedOutreachPrograms([], true);
+  const { data, error } = await supabase.from("accepted_outreach_programs")
+    .select("id,title,program_date,venue,description,created_at")
+    .order("program_date", { ascending: false });
+  if (error) {
+    setAcceptedOutreachPrograms([], false);
+    acceptedOutreachProgramsLoaded = false;
+    showDatabaseError("Loading accepted outreach programmes", error);
+    return;
+  }
+  setAcceptedOutreachPrograms(data || [], false);
+}
+
 function requestPrivateFile(path, bucket = "finance-private") {
   const fileWindow = window.open("about:blank", "_blank");
   if (fileWindow) fileWindow.opener = null;
@@ -494,6 +554,10 @@ document.addEventListener("click", event => {
   if (fileLink && currentProfile) requestPrivateFile(fileLink.dataset.financeFile);
   const workFile = event.target instanceof Element ? event.target.closest("[data-work-file]") : null;
   if (workFile && currentProfile) requestPrivateFile(workFile.dataset.workFile, "student-works-private");
+  const outreachFile = event.target instanceof Element ? event.target.closest("[data-outreach-file]") : null;
+  if (outreachFile && currentProfile && ["student", "developer"].includes(currentProfile.role)) {
+    requestPrivateFile(outreachFile.dataset.outreachFile, "outreach-evidence");
+  }
 
   const deleteFinance = event.target instanceof Element ? event.target.closest("[data-finance-delete]") : null;
   if (deleteFinance && currentProfile && ["developer", "treasurer"].includes(currentProfile.role)) {
@@ -1406,6 +1470,92 @@ document.addEventListener("submit", event => {
     submitWork().catch(error => showDatabaseError("Submitting your creative work", error));
     return;
   }
+  if (event.target.id === "outreach-request-form") {
+    event.preventDefault();
+    if (!event.target.reportValidity()) return;
+    if (!supabase || !currentProfile || currentProfile.role !== "student") {
+      showToast("An active student account is required to submit an outreach programme request.", "error");
+      return;
+    }
+    const form = event.target;
+    const formData = new FormData(form);
+    const file = formData.get("evidence");
+    const submitRequest = async () => {
+      let evidencePath = null;
+      if (file instanceof File && file.size > 0) {
+        const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+        if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+          showToast("Choose a PDF or JPEG, PNG, or WebP image no larger than 10 MB.", "error");
+          return;
+        }
+        const safeName = file.name.normalize("NFKC").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-100);
+        evidencePath = `${currentProfile.id}/${crypto.randomUUID()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("outreach-evidence")
+          .upload(evidencePath, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          showDatabaseError("Uploading your outreach evidence", uploadError);
+          return;
+        }
+      }
+      const { error } = await insertForCurrentUser("outreach_program_requests", {
+        title: String(formData.get("title")).trim(),
+        program_date: String(formData.get("program_date")),
+        venue: String(formData.get("venue")).trim(),
+        description: String(formData.get("description")).trim(),
+        evidence_path: evidencePath
+      });
+      if (error) {
+        if (evidencePath) {
+          const { error: cleanupError } = await supabase.storage.from("outreach-evidence").remove([evidencePath]);
+          if (cleanupError) console.error("Could not remove unattached outreach evidence.", cleanupError);
+        }
+        showDatabaseError("Submitting your outreach programme request", error);
+        return;
+      }
+      form.reset();
+      outreachRequestsLoaded = false;
+      await loadOutreachRequests();
+      showToast("Your outreach programme request has been sent to the developer for review.");
+    };
+    submitRequest().catch(error => showDatabaseError("Submitting your outreach programme request", error));
+    return;
+  }
+  if (event.target.matches(".review-outreach-request-form")) {
+    event.preventDefault();
+    if (currentProfile?.role !== "developer" || !event.target.reportValidity()) return;
+    const form = event.target;
+    const submitter = event.submitter;
+    const status = submitter instanceof HTMLButtonElement ? submitter.value : "";
+    if (!["accepted", "rejected"].includes(status)) {
+      showToast("Choose whether to accept or decline this outreach request.", "error");
+      return;
+    }
+    const button = submitter instanceof HTMLButtonElement ? submitter : null;
+    if (button) button.disabled = true;
+    (async () => {
+      try {
+        const { error } = await supabase.from("outreach_program_requests").update({
+          status,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: currentProfile.id
+        }).eq("id", form.dataset.outreachReview).eq("status", "pending").select("id").single();
+        if (error) {
+          showDatabaseError("Saving the outreach programme decision", error);
+          return;
+        }
+        outreachRequestsLoaded = false;
+        await loadOutreachRequests();
+        acceptedOutreachProgramsLoaded = false;
+        await loadAcceptedOutreachPrograms();
+        showToast(status === "accepted" ? "Outreach programme request accepted." : "Outreach programme request declined.");
+      } catch (error) {
+        showDatabaseError("Saving the outreach programme decision", error);
+      } finally {
+        if (button?.isConnected) button.disabled = false;
+      }
+    })();
+    return;
+  }
   if (event.target.id !== "suggestion-form") return;
   event.preventDefault();
   if (!event.target.reportValidity()) return;
@@ -1436,6 +1586,7 @@ document.addEventListener("adab:route-rendered", () => {
   loadPortalWings();
   loadPortalMembers();
   const route = getActiveRoute();
+  if (route === "outreach") loadAcceptedOutreachPrograms();
   if (route === "home" || route === "events") loadPortalEvents();
   if (route === "programs") loadProgramPosters();
   if (route === "home") loadAnnouncements();
@@ -1443,6 +1594,8 @@ document.addEventListener("adab:route-rendered", () => {
   if (route === "finance") loadBudgetAllocations();
   if (route === "admin") loadAdminProfiles();
   if (route === "account") loadReviewData();
+  if ((route === "outreach" && currentProfile?.role === "student")
+    || (route === "account" && currentProfile?.role === "developer")) loadOutreachRequests();
   if (getActiveRoute() === "works" && supabase && !publishedWorksLoaded) {
     publishedWorksLoaded = true;
     supabase.from("creative_submissions")
@@ -1505,10 +1658,12 @@ if (supabase) {
       budgetLoaded = false;
       adminProfilesLoaded = false;
       reviewDataLoaded = false;
+      outreachRequestsLoaded = false;
       setFinanceEntries([], false);
       setBudgetAllocations([], false);
       setAdminProfiles([], false);
       setReviewData([], []);
+      setOutreachRequests([], false);
     }
     setCurrentUser(user);
     if (!user) {

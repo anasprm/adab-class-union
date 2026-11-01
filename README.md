@@ -17,6 +17,7 @@ The site can build without Supabase credentials, but account and submission feat
 2. In the Supabase SQL Editor, run the migrations in order:
    - [`supabase/migrations/20261028000100_portal_submissions.sql`](./supabase/migrations/20261028000100_portal_submissions.sql)
    - [`supabase/migrations/20261028000200_portal_roles_finance.sql`](./supabase/migrations/20261028000200_portal_roles_finance.sql)
+   - [`supabase/migrations/20261101000700_outreach_program_requests.sql`](./supabase/migrations/20261101000700_outreach_program_requests.sql) (apply after the other existing portal migrations)
 3. In **Project Settings → API**, copy the project URL and publishable key into `.env.local`:
 
    ```dotenv
@@ -28,6 +29,8 @@ The site can build without Supabase credentials, but account and submission feat
 5. Invitation and password-reset links return to the portal's `#login` route. Account registration is restricted to developer-sent invitations.
 
 The role migration enables Row Level Security for profiles, events, announcements, and the finance ledger. Database-enforced account limits are one teacher, one core committee account, one treasurer, 15 students, seven wing accounts, and one developer; only active portal members can read financial entries or attachments. Visitors and signed-in accounts without an assigned role cannot access finance. Only a treasurer or developer can create, edit, or remove finance entries. Creative work and suggestions can be submitted only by approved accounts; the teacher, core committee, and developer can review them. Public visitors can read only creative works and announcements that have been published. Never put a Supabase `service_role` or secret key in this frontend, a `VITE_` variable, or Git.
+
+Active student accounts can request outreach programme entries and attach private evidence from the Outreach page. Only the developer can accept or decline requests; accepted programme details are then listed publicly on that page.
 
 ### Bootstrap the developer and enable invitations
 

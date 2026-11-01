@@ -53,6 +53,10 @@ let budgetLoading = false;
 let adminProfiles = PRESEEDED_ACCOUNTS;
 let reviewWorks = [];
 let reviewSuggestions = [];
+let outreachRequests = [];
+let outreachRequestsLoading = false;
+let acceptedOutreachPrograms = [];
+let acceptedOutreachProgramsLoading = false;
 let programPosters = [];
 let financeLoading = false;
 let adminLoading = false;
@@ -1050,6 +1054,28 @@ function renderAccount() {
         </div>` : `<p class="form-note">No student submissions are currently pending moderation.</p>`}
       </section>
 
+      ${profile.role === "developer" ? `
+      <section class="section-block">
+        <div class="section-heading"><div><p class="eyebrow">Outreach review</p><h2 class="section-title">Programme requests awaiting review</h2></div></div>
+        ${outreachRequestsLoading
+          ? `<p class="form-note">Loading outreach programme requests…</p>`
+          : outreachRequests.length ? `<div class="management-list">${outreachRequests.map(request => `
+            <article class="card management-card">
+              <div>
+                <span class="badge">Outreach request</span>
+                <h3>${escapeHTML(request.title)}</h3>
+                <p>Submitted by ${escapeHTML(request.submitter_name)} · ${escapeHTML(request.program_date)} · ${escapeHTML(request.venue)}</p>
+                <p>${escapeHTML(request.description)}</p>
+                ${request.evidence_path ? `<p><button class="text-link" type="button" data-outreach-file="${escapeHTML(request.evidence_path)}">View evidence</button></p>` : ""}
+              </div>
+              <form class="review-outreach-request-form" data-outreach-review="${escapeHTML(request.id)}">
+                <button class="button" type="submit" name="status" value="accepted">Accept request</button>
+                <button class="button button-secondary" type="submit" name="status" value="rejected">Decline</button>
+              </form>
+            </article>`).join("")}</div>`
+          : `<p class="form-note">There are no outreach programme requests awaiting review.</p>`}
+      </section>` : ""}
+
       <!-- Publish Official Announcements -->
       <section class="section-block">
         <div class="section-heading"><div><p class="eyebrow">Class communication</p><h2 class="section-title">Publish an official announcement</h2></div></div>
@@ -1585,13 +1611,72 @@ function renderOutreach() {
     </section>
 
     <section class="section-block">
+      <div class="section-heading"><div><p class="eyebrow">Approved submissions</p><h2 class="section-title">Student outreach programmes</h2></div></div>
+      ${acceptedOutreachProgramsLoading
+        ? `<p class="form-note">Loading accepted outreach programmes…</p>`
+        : acceptedOutreachPrograms.length ? `<div class="card-grid">${acceptedOutreachPrograms.map(program => `
+          <article class="card">
+            <div class="card-body">
+              <span class="badge">Accepted outreach</span>
+              <h3>${escapeHTML(program.title)}</h3>
+              <p>${escapeHTML(program.program_date)} · ${escapeHTML(program.venue)}</p>
+              <p>${escapeHTML(program.description)}</p>
+            </div>
+          </article>`).join("")}</div>`
+        : `<p class="form-note">No student-submitted programmes have been accepted yet.</p>`}
+    </section>
+
+    <section class="section-block">
       <p class="eyebrow">How to participate</p>
-      <h2 class="section-title">Propose an outreach activity</h2>
-      <p class="lead">Bring your proposal to a core committee member before the weekly review. Approved activities are announced on the portal and counted in the SAMIA outreach record.</p>
-      <div class="auth-required">
-        <p>${currentUser ? "Open your account to review the outreach activities credited to you." : "Sign in with your student account to track the outreach work credited to you."}</p>
-        <a class="button" href="#${currentUser ? "account" : "login"}">${currentUser ? "Open your account →" : "Sign in →"}</a>
-      </div>
+      <h2 class="section-title">Request an outreach programme entry</h2>
+      <p class="lead">Students can submit a programme for developer review. Include supporting evidence when available; accepted requests will be recorded by the union.</p>
+      ${currentProfile?.is_active && currentProfile.role === "student" ? `
+        <form class="contact-form" id="outreach-request-form">
+          <div class="form-field">
+            <label for="outreach-title">Programme name</label>
+            <input id="outreach-title" name="title" required maxlength="120">
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="outreach-date">Programme date</label>
+              <input id="outreach-date" name="program_date" type="date" required>
+            </div>
+            <div class="form-field">
+              <label for="outreach-venue">Venue</label>
+              <input id="outreach-venue" name="venue" required maxlength="120">
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="outreach-details">Programme details</label>
+            <textarea id="outreach-details" name="description" required maxlength="1000" placeholder="Describe the outreach activity and your participation."></textarea>
+          </div>
+          <div class="form-field">
+            <label for="outreach-evidence">Evidence file (optional)</label>
+            <input id="outreach-evidence" name="evidence" type="file" accept=".pdf,image/jpeg,image/png,image/webp">
+            <small class="form-note">PDF or JPEG, PNG, WebP image; maximum 10 MB.</small>
+          </div>
+          <button class="button" type="submit">Submit programme request</button>
+        </form>
+        <section class="section-block" aria-labelledby="outreach-own-requests">
+          <div class="section-heading"><div><p class="eyebrow">Your submissions</p><h3 class="section-title" id="outreach-own-requests">Outreach requests</h3></div></div>
+          ${outreachRequestsLoading
+            ? `<p class="form-note">Loading your outreach requests…</p>`
+            : outreachRequests.length ? `<div class="management-list">${outreachRequests.map(request => `
+              <article class="card management-card">
+                <div>
+                  <span class="badge ${request.status === "accepted" ? "" : "badge-neutral"}">${escapeHTML(request.status)}</span>
+                  <h3>${escapeHTML(request.title)}</h3>
+                  <p>${escapeHTML(request.program_date)} · ${escapeHTML(request.venue)}</p>
+                  <p>${escapeHTML(request.description)}</p>
+                  ${request.evidence_path ? `<p><button class="text-link" type="button" data-outreach-file="${escapeHTML(request.evidence_path)}">View evidence</button></p>` : ""}
+                </div>
+              </article>`).join("")}</div>`
+            : `<p class="form-note">You have not submitted any outreach programme requests yet.</p>`}
+        </section>` : `
+        <div class="auth-required">
+          <p>${currentUser ? "This request form is available to active student accounts. Sign in with a student account to submit an outreach programme." : "Sign in with your student account to request an outreach programme entry."}</p>
+          <a class="button" href="#${currentUser ? "account" : "login"}">${currentUser ? "Open your account →" : "Sign in →"}</a>
+        </div>`}
     </section>
   </div>`;
 }
