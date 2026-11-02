@@ -2439,6 +2439,47 @@ export function renderRoute(route = getActiveRoute()) {
       accountLink.dataset.route = currentUser ? "account" : "login";
     }
 
+    // Top right header user navigation & sign out pill
+    const userPill = document.querySelector("#user-nav-pill");
+    const signinBtn = document.querySelector("#header-signin-btn");
+    const avatarEl = document.querySelector("#user-nav-avatar");
+    const nameEl = document.querySelector("#user-nav-name");
+    const roleEl = document.querySelector("#user-nav-role");
+
+    if (currentUser) {
+      if (userPill) userPill.hidden = false;
+      if (signinBtn) signinBtn.hidden = true;
+
+      const profile = currentProfile;
+      const displayName = profile?.display_name || profile?.username || currentUser.email?.split("@")[0] || "Account";
+      if (nameEl) nameEl.textContent = displayName;
+
+      if (roleEl) {
+        const roleTitles = {
+          developer: "Developer",
+          teacher: "Teacher",
+          committee: "Committee",
+          treasurer: "Treasurer",
+          wing: "Wing Lead",
+          student: "Student"
+        };
+        roleEl.textContent = profile ? (roleTitles[profile.role] || profile.role) : "Member";
+      }
+
+      if (avatarEl) {
+        const initials = displayName
+          .split(" ")
+          .map(part => part[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase() || "U";
+        avatarEl.textContent = initials;
+      }
+    } else {
+      if (userPill) userPill.hidden = true;
+      if (signinBtn) signinBtn.hidden = false;
+    }
+
     // Finance link in nav: STRICTLY HIDDEN to unauthenticated visitors
     document.querySelectorAll(".member-nav-link").forEach(link => {
       link.hidden = !currentProfile || !currentProfile.is_active;

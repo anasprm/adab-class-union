@@ -103,6 +103,105 @@
 }
 .theme-toggle { padding: 0 12px; white-space: nowrap; font-size: .76rem; font-weight: 600; letter-spacing: .04em; }
 .theme-toggle:hover, .icon-button:hover { border-color: var(--border-strong); background: var(--bg-inset); }
+
+/* Header Actions & Modern User Pill */
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.header-signin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--red-primary);
+  border-radius: var(--radius-sm);
+  background: var(--red-primary);
+  color: var(--button-text);
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity var(--transition), background var(--transition);
+}
+.header-signin-btn:hover { opacity: .9; }
+
+.user-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: var(--bg-card);
+  transition: border-color var(--transition);
+}
+.user-nav-pill:hover { border-color: var(--border-strong); }
+
+.user-nav-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--text-main);
+}
+
+.user-nav-avatar {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--red-light);
+  color: var(--red-primary);
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.user-nav-details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.user-nav-name {
+  font-size: .78rem;
+  font-weight: 600;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-nav-role {
+  font-size: .65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.user-nav-signout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.user-nav-signout-btn:hover {
+  background: var(--red-light);
+  color: var(--red-primary);
+}
+.user-nav-signout-btn svg { width: 15px; height: 15px; }
+.user-nav-signout-btn .signout-text { display: none; }
 .menu-toggle { display: none; width: 42px; padding: 0; }
 .menu-icon, .menu-icon::before, .menu-icon::after {
   display: block;
