@@ -278,8 +278,9 @@ function renderPrograms() {
       item.third_prize && { position: "3rd Prize", recipient: item.third_prize }
     ].filter(Boolean)
   })).map(program => ({ ...program, hasResult: program.result.length > 0 }));
-  const posterPrograms = programsList.filter(program => !program.video);
-  const videoPrograms = programsList.filter(program => program.video);
+  const posterPrograms = programsList.filter(program => !program.video && !program.isHighlight);
+  const videoPrograms = programsList.filter(program => program.video && !program.isHighlight);
+  const highlightPrograms = programsList.filter(program => program.isHighlight);
   const canDeletePosters = currentProfile?.is_active && currentProfile.role === "developer";
   const renderProgramCards = programs => programs.map(prog => `
         <article class="ig-post-card program-card" data-post-id="${escapeHTML(prog.id)}" aria-label="${escapeHTML(prog.title)} ${prog.video ? "video reel" : "poster"}">
@@ -343,6 +344,7 @@ function renderPrograms() {
 
     <div class="program-grid-tabs" role="tablist" aria-label="Program media">
       <button class="program-grid-tab is-active" id="program-posters-tab" type="button" role="tab" aria-selected="true" aria-controls="program-posters-panel" data-program-tab="poster">Posters <span>${posterPrograms.length}</span></button>
+      <button class="program-grid-tab" id="program-highlights-tab" type="button" role="tab" tabindex="-1" aria-selected="false" aria-controls="program-highlights-panel" data-program-tab="highlight">Highlights <span>${highlightPrograms.length}</span></button>
       <button class="program-grid-tab" id="program-videos-tab" type="button" role="tab" tabindex="-1" aria-selected="false" aria-controls="program-videos-panel" data-program-tab="video">Videos <span>${videoPrograms.length}</span></button>
     </div>
     <section class="section-block program-tab-panel" id="program-posters-panel" role="tabpanel" aria-labelledby="program-posters-tab" data-program-panel="poster">
@@ -350,6 +352,12 @@ function renderPrograms() {
         ${renderProgramCards(posterPrograms)}
       </div>
       ${posterPrograms.length ? "" : `<div class="program-empty-state"><strong>No posters yet</strong><p>Published program posters will appear here.</p></div>`}
+    </section>
+    <section class="section-block program-tab-panel" id="program-highlights-panel" role="tabpanel" aria-labelledby="program-highlights-tab" data-program-panel="highlight" hidden>
+      <div class="ig-feed-grid">
+        ${renderProgramCards(highlightPrograms)}
+      </div>
+      ${highlightPrograms.length ? "" : `<div class="program-empty-state"><strong>No highlights yet</strong><p>Highlighted programs will appear here.</p></div>`}
     </section>
     <section class="section-block program-tab-panel" id="program-videos-panel" role="tabpanel" aria-labelledby="program-videos-tab" data-program-panel="video" hidden>
       <div class="ig-feed-grid">
